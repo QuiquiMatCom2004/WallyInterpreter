@@ -1,7 +1,70 @@
 ﻿@page "/"
+@inject Backend backend
+@rendermode InteractiveServer
+<h3>Editor de Código</h3>
 
-<PageTitle>Home</PageTitle>
+<div class="container mt-4">
+    <div class="mb-3">
+        <label for="codeInput" class="form-label">Escribe tu código:</label>
+        <!-- Usamos un textarea para tener un editor multilinea -->
+        <textarea id="codeInput" @bind="CodeInput" class="form-control" rows="10" style="font-family: monospace;"></textarea>
+    </div>
 
-<h1>Hello, world!</h1>
+    <div class="mb-3">
+        <h5>Código ingresado</h5>
+        <!-- Aquí se muestra el código ingresado en tiempo real -->
+        <pre>@CodeInput</pre>
+    </div>
 
-Welcome to your new app.
+    <div class="mb-3">
+        <button class="btn btn-primary" @onclick="CompileCode">Compilar</button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(CompilationResult))
+    {
+        <div class="alert alert-info">
+            <h5>Resultado de la Compilación</h5>
+            <pre>@CompilationResult</pre>
+        </div>
+    }
+</div>
+@code {
+    // Propiedad donde se almacena el código ingresado por el usuario.
+    private string CodeInput { get; set; } = string.Empty;
+
+    // Propiedad que mostrará el resultado del proceso de compilación.
+    private string CompilationResult { get; set; } = string.Empty;
+
+    // Simula el proceso de compilación: aquí puedes integrar tu compilador para el lenguaje
+    private void CompileCode()
+    {
+        if (string.IsNullOrWhiteSpace(CodeInput))
+        {
+            CompilationResult = "No hay código para compilar.";
+            return;
+        }
+
+        // Aquí iría la lógica de compilación. Por ahora simulamos una salida.
+        // Por ejemplo, podrías llamar a tu servicio de análisis y compilación:
+        // CompilationResult = CompilerService.Compile(CodeInput);
+        CompilationResult =backend.TestLexer(CodeInput);
+    }
+    private string TestGranmar()
+    {
+        //var g = backend.CreateGranmar(new GranmarSymbol("01",false,GranmarSymbolType.NonTerminal));
+        //g = backend.AddWord(g, CodeInput);
+        var g = backend.GetWordsGranmar(CodeInput.Split(' '));
+        g = backend.UnionGranmar(new IGranmar[] { g, backend.CreateGranmar(new GranmarSymbol("01", false, GranmarSymbolType.NonTerminal)) }, "start2");
+        return backend.GetGranmar(g);
+    }
+    private string TestAutomaton()
+    {
+        var st = CodeInput.Split(' ');
+        var aut = backend.CreateAutomatonBySequence((st[0]).ToCharArray(),"start0");
+        for(int i = 1;i < st.Length;i++)
+        {
+            aut = backend.UnionAutomaton(aut, backend.CreateAutomatonBySequence((st[i]).ToCharArray(),$"start{i}"));
+        }
+        return backend.GetAutomaton(aut);
+    }
+}

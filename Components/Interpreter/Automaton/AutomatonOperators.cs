@@ -15,6 +15,9 @@
             List<IState<T>> states = new List<IState<T>>();
             for (int i = 0; i < sequence.Length; i++) { 
                 states.Add(new State<T>(id+i.ToString(), i == sequence.Length-1, false));
+            }
+            for(int i = 0; i < sequence.Length-1; i++)
+            {
                 states[i].AddTransition(sequence[i], states[i + 1]);
             }
             return new Automaton<T>(start, states,sequence);
@@ -27,27 +30,30 @@
         /// <returns>Automaton Union</returns>
         public static IAutomaton<T> Union(IAutomaton<T> aut1, IAutomaton<T> aut2)
         {
-            IState<T> start = new State<T>(aut1.Start().ID + "_" + aut2.Start().ID()+"_Union",false,false);
+            IState<T> start = new State<T>(aut1.Start().ID() + "_" + aut2.Start().ID()+"_Union",false,false);
             List<IState<T>> states = new List<IState<T>>() { start};
             var states1 = CopyStates(aut1);
             var states2 = CopyStates(aut2);
-            var alphabet = aut1.Alphabet();
+            var alphabet = aut1.Alphabet().ToList();
+            //unir ambos alfabetos
             foreach (var symbol in aut2.Alphabet()) {
                 if (!alphabet.Contains(symbol)) { 
-                    alphabet.ToList().Add(symbol);
+                    alphabet.Add(symbol);
                 }
             }
+            //Anadir todos los estados del automata 1
             for (var i = 0; i < states1.Length; i++) { 
                 states.Add(states1[i]);
             }
-            for (var i = 0; i < states2.Length; i++) {
+            //Anadir todos los estados del automata 2
+            for (var i = 0; i < states2.Length; i++)
+            {
                 states.Add(states2[i]);
             }
-            var s1_index = IndexOf(states.ToArray(), (from state in states where state.ID() == aut1.Start().ID() select state).FirstOrDefault());
-            var s2_index = IndexOf(states.ToArray(), (from state in states where state.ID() == aut2.Start().ID() select state).FirstOrDefault());
-            start.AddEpsilon(states[s1_index]);
-            start.AddEpsilon(states[s2_index]);
-            return new Automaton<T>(start, states, alphabet).ToDeterministic();
+            //Anado una epsilon transicion desde el estado inicial a los anteriores estados iniciales
+            start.AddEpsilon(aut1.Start());
+            start.AddEpsilon(aut2.Start());
+            return new Automaton<T>(start, states, alphabet.ToArray()).ToDeterministic();
         }
         /// <summary>
         /// Concatenation of two automatons
@@ -61,6 +67,7 @@
             var states1 = CopyStates(aut1);
             var states2 = CopyStates(aut2);
             var alphabet = aut1.Alphabet();
+            //Anadir el alfabeto
             foreach (var symbol in aut2.Alphabet())
             {
                 if (!alphabet.Contains(symbol))
@@ -68,28 +75,34 @@
                     alphabet.ToList().Add(symbol);
                 }
             }
+            //Anadir los estados del primer automata
             for (var i = 0; i < states1.Length; i++)
             {
                 states.Add(states1[i]);
             }
+
+            //Anadir los estados del segundo automata
             for (var i = 0; i < states2.Length; i++)
             {
                 states.Add(states2[i]);
             }
-            int s_index_to = IndexOf(states.ToArray(), (from s in states where s.ID() == aut2.Start().ID() select s).FirstOrDefault());
+            //A todos los estados finales del primer automata agregale una epsilon transition al inicial del segundo automata
             foreach(var state in aut1.Finals())
             {
-                int s_index_from = IndexOf(states.ToArray(), (from s in states where s.ID() == state.ID() select s).FirstOrDefault());
-                states[s_index_from].AddEpsilon(states[s_index_to]);
+                foreach(var st in states)
+                {
+                    if (st.ID() == state.ID())
+                    {
+                        st.AddEpsilon(aut2.Start());
+                    }
+                }    
             }
-            int start = IndexOf(states.ToArray(), (from s in states where s.ID() == aut1.Start().ID() select s).FirstOrDefault());
-            return new Automaton<T>(states[start], states, alphabet).ToDeterministic();
+            return new Automaton<T>(aut1.Start(), states, alphabet).ToDeterministic();
         }
         public static IAutomaton<T> CopyAutomaton(IAutomaton<T> automaton)
         {
             var states = CopyStates(automaton);
-            int startindex = IndexOf(states, automaton.Start());
-            return new Automaton<T>(states[startindex], states.ToList(), automaton.Alphabet());
+            return new Automaton<T>(automaton.Start(), states.ToList(), automaton.Alphabet());
         }
         /// <summary>
         /// Create a copy the states of one automaton
@@ -128,14 +141,18 @@
                 {
                     foreach(var id in  epsilons[states[i].ID()])
                     {
-                        int ep_index = IndexOf(states.ToArray(),(from s in states where s.ID() == id select s).FirstOrDefault());
-                        states[i].AddEpsilon(states[ep_index]);
+                        foreach(var st in states)
+                        {
+                            if(st.ID() == id)
+                                states[i].AddEpsilon(st);
+                        }
                     }
                 }
                 foreach(var pair in transitions[states[i].ID()])
                 {
-                    int s_index = IndexOf(states.ToArray(), (from s in states where s.ID() == pair.Value select s).FirstOrDefault());
-                    states[i].AddTransition(pair.Key, states[s_index]);
+                    foreach(var s in states)
+                        if(s.ID() == pair.Value)
+                            states[i].AddTransition(pair.Key, s);
                 }
             }
             return states.ToArray();
@@ -190,14 +207,21 @@
         /// <param name="states">Array of States</param>
         /// <param name="state">State to search index</param>
         /// <returns>Intiger index</returns>
-        public static int IndexOf(IState<T>[] states, IState<T> state)
+        public static bool Match(T[] s, IAutomaton<T> automaton)
         {
-            for (int i = 0; i < states.Length; i++)
+            foreach(var c in s)
             {
-                if (states[i].ID() == state.ID())
-                    return i;
+                try
+                {
+                    automaton.Walk(c);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.ToString());
+                }
             }
-            return -1;
+            return automaton.CurrentState().IsAccepting();
+            
         }
     }
 }

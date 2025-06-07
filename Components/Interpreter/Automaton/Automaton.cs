@@ -105,11 +105,11 @@ namespace WallyInterpreter.Components.Interpreter.Automaton
             }
             foreach(var item in resultofDeterministicAux.transition)
             {
-                int index = (from s in states where s.ID() == item.Key select states.IndexOf(s)).FirstOrDefault();
+                var st1 = states.Find(s => s.ID() == item.Key);
                 foreach(var dict in item.Value)
                 {
-                    int index2 = (from s in states where s.ID() == dict.Value select states.IndexOf(s)).FirstOrDefault();
-                    states[index].AddTransition(dict.Key , states[index2]);
+                    var st2 = states.Find(s => s.ID() == dict.Value);
+                    st1.AddTransition(dict.Key , st2);
                 }
             }
             return new Automaton<T>(initialState, states,Alphabet());
@@ -213,9 +213,21 @@ namespace WallyInterpreter.Components.Interpreter.Automaton
             {
                 id = "_" + state.ID();
             }
-            var accepting = (from state in states where state.IsAccepting() select state).Count() > 0;
-            var fault = (from state in states where state.IsFault() select state).Count() == states.Length;
+            var accepting = states.ToList().FindAll(s => s.IsAccepting()).Count() > 0;
+            var fault = states.ToList().FindAll(s=>s.IsFault()).Count() == states.Length;
             return new State<T> (id, accepting, fault);
+        }
+        public override string ToString()
+        {
+            var S = () => {
+                string s = "";
+                foreach (var state in _states)
+                {
+                    s += " , " + state.ID();
+                }
+                return s;
+            };
+            return $"start state: {_start.ID()} , {_alphabet.ToString()} " + S();
         }
     }
 }

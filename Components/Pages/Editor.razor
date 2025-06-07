@@ -1,0 +1,63 @@
+﻿@page "/editor"
+@using Microsoft.JSInterop;
+@using BlazorMonaco;
+@using BlazorMonaco.Editor;
+@using BlazorMonaco.Languages;
+@inject IJSRuntime jSRuntime;
+@rendermode InteractiveServer
+
+<h3>Editor of Wally</h3>
+
+<div style="height:600px; border: 1px solid #ccc;">
+    <StandaloneCodeEditor Id="WallyEditor"
+        @ref=editor
+    ConstructionOptions="EditorConstructionOptions"
+    CssClass="wally-editor" 
+    OnDidChangeModelContent="OnContentChanged"/>
+</div>
+
+<button class="btn btn-primary mt-3" @onclick="CompileAndRun">Compilar y Ejecutar</button>
+
+@code {
+    private string currentCode;
+    private StandaloneCodeEditor editor;
+
+    private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+    {
+        return new StandaloneEditorConstructionOptions
+        {
+            AutomaticLayout = true,
+            Language = "Wally",
+            Value = "Dibuja con wally desde aqui ..."
+        };
+    }
+    private async Task OnContentChanged(ModelContentChangedEvent eventArgs)
+    {
+        currentCode = await editor.GetValue() ;
+        Console.WriteLine("Contenido actualizado: " + currentCode);
+    }
+    private async Task CompileAndRun()
+    {
+        Console.WriteLine("Compilando y ejecutando el código DSL:\n" + currentCode);
+        // Llama a tu lógica de interpretación o compilación aquí.
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Llamamos a una función JS para configurar el proveedor de tokens de nuestro DSL.
+            // La función "setupDslLanguage" es una función JavaScript que deberás definir.
+            // Esta función se encargará de llamar a monaco.languages.setMonarchTokensProvider para el lenguaje "dsl".
+            /*await JSRuntime.InvokeVoidAsync ("setupDslLanguage", "dsl", new
+            {
+                defaultToken = "",
+                tokenPostfix = ".dsl",
+                // Aquí defines las keywords específicas de tu DSL
+                keywords = new string[] { "if", "else", "repeat", "func", "return" },
+                // Y también los operadores o símbolos especiales que utilice tu lenguaje
+                operators = new string[] { "=", "+", "-", "*", "/" }
+                // Puedes ampliar la definición incluyendo configuraciones para comentarios, strings, etc.
+            });*/
+        }
+    }
+}
