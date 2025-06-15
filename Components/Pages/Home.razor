@@ -1,70 +1,51 @@
 ﻿@page "/"
-@inject Backend backend
 @rendermode InteractiveServer
-<h3>Editor de Código</h3>
+<StandaloneCodeEditor CssClass="my_editor" @ref = "editor" ConstructionOptions="EditorConstructionOptions"/> 
 
-<div class="container mt-4">
-    <div class="mb-3">
-        <label for="codeInput" class="form-label">Escribe tu código:</label>
-        <!-- Usamos un textarea para tener un editor multilinea -->
-        <textarea id="codeInput" @bind="CodeInput" class="form-control" rows="10" style="font-family: monospace;"></textarea>
-    </div>
-
-    <div class="mb-3">
-        <h5>Código ingresado</h5>
-        <!-- Aquí se muestra el código ingresado en tiempo real -->
-        <pre>@CodeInput</pre>
-    </div>
-
-    <div class="mb-3">
-        <button class="btn btn-primary" @onclick="CompileCode">Compilar</button>
-    </div>
-
-    @if (!string.IsNullOrEmpty(CompilationResult))
-    {
-        <div class="alert alert-info">
-            <h5>Resultado de la Compilación</h5>
-            <pre>@CompilationResult</pre>
-        </div>
-    }
+<div>
+	<button style="text-align"  @onclick = "Compile">Compile</button>
+	<WallyInterpreter.Components.FileSystem.LoadButton Editor="editor" ></WallyInterpreter.Components.FileSystem.LoadButton>
+	<div>
+		<InputText @bind-Value = "FileName" />
+		<WallyInterpreter.Components.FileSystem.SaveButton editor="editor" FileName="@FileName" ></WallyInterpreter.Components.FileSystem.SaveButton>
+	</div>
 </div>
-@code {
-    // Propiedad donde se almacena el código ingresado por el usuario.
-    private string CodeInput { get; set; } = string.Empty;
 
-    // Propiedad que mostrará el resultado del proceso de compilación.
-    private string CompilationResult { get; set; } = string.Empty;
 
-    // Simula el proceso de compilación: aquí puedes integrar tu compilador para el lenguaje
-    private void CompileCode()
-    {
-        if (string.IsNullOrWhiteSpace(CodeInput))
-        {
-            CompilationResult = "No hay código para compilar.";
-            return;
-        }
-
-        // Aquí iría la lógica de compilación. Por ahora simulamos una salida.
-        // Por ejemplo, podrías llamar a tu servicio de análisis y compilación:
-        // CompilationResult = CompilerService.Compile(CodeInput);
-        CompilationResult =backend.TestLexer(CodeInput);
-    }
-    private string TestGranmar()
-    {
-        //var g = backend.CreateGranmar(new GranmarSymbol("01",false,GranmarSymbolType.NonTerminal));
-        //g = backend.AddWord(g, CodeInput);
-        var g = backend.GetWordsGranmar(CodeInput.Split(' '));
-        g = backend.UnionGranmar(new IGranmar[] { g, backend.CreateGranmar(new GranmarSymbol("01", false, GranmarSymbolType.NonTerminal)) }, "start2");
-        return backend.GetGranmar(g);
-    }
-    private string TestAutomaton()
-    {
-        var st = CodeInput.Split(' ');
-        var aut = backend.CreateAutomatonBySequence((st[0]).ToCharArray(),"start0");
-        for(int i = 1;i < st.Length;i++)
-        {
-            aut = backend.UnionAutomaton(aut, backend.CreateAutomatonBySequence((st[i]).ToCharArray(),$"start{i}"));
-        }
-        return backend.GetAutomaton(aut);
-    }
+@code
+{
+	private StandaloneCodeEditor editor = null!;
+	private string FileName = "miPrograma";
+	private WallyInterpreter.Components.Interpreter.Wally.WallyInterpreter wally = new Interpreter.Wally.WallyInterpreter();
+	private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+	{
+		return new StandaloneEditorConstructionOptions()
+			{
+				Language = "WallyDSL",
+				AutomaticLayout = true,
+				Value = "Spawn(0,0)",
+				Theme = "vs-dark",
+				BracketPairColorization = new BracketPairColorizationOptions() { IndependentColorPoolPerBracketType = true, Enabled = true },
+				CursorBlinking = "smooth",
+				CursorStyle = "block",
+				Scrollbar = new EditorScrollbarOptions()
+				{
+					HorizontalHasArrows = true,
+					VerticalHasArrows = true,
+				}
+			};
+	}
+	private async Task Compile()
+	{
+		try
+		{
+			var code = await editor.GetValue();
+			wally.Execute(code);
+			Console.WriteLine("Compilacion Exitosa");
+		}
+		catch(Exception ex)
+		{
+			Console.WriteLine($"Compilacion fallida:{ex.Message} ");
+		}
+	}
 }

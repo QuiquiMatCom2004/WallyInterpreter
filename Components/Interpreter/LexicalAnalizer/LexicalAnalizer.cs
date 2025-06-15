@@ -1,4 +1,5 @@
-﻿using WallyInterpreter.Components.Interpreter.Tokens;
+﻿using WallyInterpreter.Components.Interpreter.Errors;
+using WallyInterpreter.Components.Interpreter.Tokens;
 
 namespace WallyInterpreter.Components.Interpreter.LexicalAnalizer
 {
@@ -17,18 +18,19 @@ namespace WallyInterpreter.Components.Interpreter.LexicalAnalizer
             }   
         }
 
-        public void CheckRule(IToken token)
+        public IError CheckRule(IToken token)
         {
             if (token.Type() == Tokentype.Garbage)
-                throw new Exception("GarbageToken " + token.ToString());
+                return new Error("GarbageToken " + token.Lexeme(),token.Line(),token.Column(),ErrorType.Lexical);
             if(rules.ContainsKey(token.Type()))
             {
                 foreach (var rule in rules[token.Type()])
                 {
                     if (!rule.Rule()(token))
-                        throw new Exception(rule.ErrorRule() + " : " + token.ToString());
+                        return new Error(rule.ErrorRule() + ": " + token.Lexeme(), token.Line(), token.Column(), ErrorType.Lexical);
                 }
             }
+            return null;
         }
     }
 }

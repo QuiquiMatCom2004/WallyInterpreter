@@ -9,6 +9,7 @@
         Identifier,
         Number,
         Boolean,
-        String
+        String,
+        EOL
     }
 }

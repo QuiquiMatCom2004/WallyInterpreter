@@ -1,0 +1,26 @@
+﻿
+<button class="btn-save" @onclick="GenerateLink">💾 Guardar .pw</button>
+
+@if (!string.IsNullOrEmpty(DownloadHref))
+{
+    <!-- Este link “apunta” al blob en memoria y fuerza el Save-As -->
+    <a class="btn-download" href="@DownloadHref" download="@FileName .pw">
+        Haz clic aquí para descargar tu @FileName
+    </a>
+}
+
+@code {
+	[Parameter] public StandaloneCodeEditor editor { get; set; }
+	[Parameter] public string FileName { get; set; } = "file";
+
+    private string? DownloadHref;
+
+    private async Task GenerateLink()
+    {
+        var code = await editor.GetValue();
+        var bytes = System.Text.Encoding.UTF8.GetBytes(code);
+        var b64 = Convert.ToBase64String(bytes);
+        DownloadHref = $"data:application/octet-stream;base64,{b64}";
+    }
+}
+}

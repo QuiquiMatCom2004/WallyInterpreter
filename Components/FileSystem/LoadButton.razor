@@ -1,0 +1,23 @@
+﻿
+@using Microsoft.AspNetCore.Components.Forms
+
+<label class="btn-load">
+    📂 Cargar .pw
+    <InputFile OnChange="LoadPw" accept=".pw" />
+</label>
+
+@code {
+    [Parameter] public StandaloneCodeEditor Editor { get; set; } = null!;
+    [Parameter] public long MaxFileSize { get; set; } = 1024 * 1024; // 1 MB
+
+    private async Task LoadPw(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        using var stream = file.OpenReadStream(MaxFileSize);
+        using var reader = new StreamReader(stream);
+        var text = await reader.ReadToEndAsync();
+
+        // Pone el contenido en el editor
+        await Editor.SetValue(text);
+    }
+}

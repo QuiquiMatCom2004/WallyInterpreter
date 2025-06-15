@@ -12,10 +12,46 @@
     <link rel="icon" type="image/png" href="favicon.png" />
     <HeadOutlet />
 </head>
-
 <body>
     <Routes />
     <script src="_framework/blazor.web.js"></script>
+    <script src="_content/BlazorMonaco/jsInterop.js"></script>
+    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/loader.js"></script>
+    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/editor/editor.main.js"></script>
+    <script>
+        require.config({ paths: { vs: '_content/BlazorMonaco/vs' }});
+
+        // 2. Esperamos a que MonacoCore esté listo y registramos "mydsl"
+        require(['vs/editor/editor.main'], () => {
+          monaco.languages.register({
+            id: 'WallyDSL',
+            aliases: ['WallyDSL'],
+            extensions: ['.pw']
+          });
+
+          monaco.languages.setMonarchTokensProvider('WallyDSL', {
+            tokenizer: {
+              root: [
+                [/".*?"/, 'string'],
+                [/\bgoto\b/, 'keyword'],
+                [/\d+/, 'number'],
+                [/[[()]]/, 'delimiter'],
+                [/[a-zA-Z_]\w*/, 'identifier']
+              ]
+            }
+          });
+
+          monaco.languages.setLanguageConfiguration('WallyDSL', {
+            comments: { lineComment: '#' },
+            brackets: [['{','}']],
+            autoClosingPairs: [
+              { open: '(', close: ')' },
+              { open: '[', close: ']' },
+              { open: '"', close: '"' }
+            ]
+          });
+        });
+    </script>
 </body>
 
 </html>

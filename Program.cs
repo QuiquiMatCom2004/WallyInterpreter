@@ -1,4 +1,7 @@
+using BlazorMonaco.Editor;
 using WallyInterpreter.Components;
+using WallyInterpreter.Components.Interpreter.Wally;
+using WallyInterpreter.Components.Interpreter.Wally.Sintactic;
 using WallyInterpreter.Components.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-builder.Services.AddSingleton<Backend>();
+builder.Services.AddSingleton<WallyInterpreter.Components.Interpreter.Wally.WallyInterpreter>();
 
 var app = builder.Build();
 

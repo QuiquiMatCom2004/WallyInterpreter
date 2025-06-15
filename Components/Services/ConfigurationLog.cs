@@ -3,7 +3,7 @@
     public class ConfigurationLog
     {
         private Logger<ConfigurationLog> logger;
-        private readonly string PathArchive = "Logs/errors.log";
+        private readonly string PathArchive = "wwwroot/Logs/errors.log";
         public ConfigurationLog()
         {
             logger = new Logger<ConfigurationLog>( new LoggerFactory());

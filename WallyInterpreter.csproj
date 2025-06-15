@@ -7,7 +7,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="wwwroot\images\Wally.jpg" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BlazorMonaco" Version="3.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\Logs\" />
   </ItemGroup>
 
 </Project>

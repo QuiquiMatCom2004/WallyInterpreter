@@ -91,28 +91,18 @@ namespace WallyInterpreter.Components.Interpreter.Automaton
         /// <returns>DFA Automaton</returns>
         public IAutomaton<T> ToDeterministic()
         {
-            AuxStructToDeterministic resultofDeterministicAux = AuxDeterministic();
-            List<IState<T>> states = new List<IState<T>>();
-            IState<T> initialState = null;
-            foreach(var statesr in resultofDeterministicAux.states)
+            var resultofDeterministicAux = AuxDeterministic();
+            var dfaStates = resultofDeterministicAux.states.Select(set => MakeCompositeState(set)).ToDictionary(s=>s.ID(),s => s);
+            foreach(var t in resultofDeterministicAux.transition)
             {
-                var new_state = MakeStateFromStates(statesr);
-                if(new_state.ID() == resultofDeterministicAux.id)
+                var f = dfaStates[t.Key];
+                foreach(var v in t.Value)
                 {
-                    initialState = new_state;
-                }
-                states.Add(new_state);
-            }
-            foreach(var item in resultofDeterministicAux.transition)
-            {
-                var st1 = states.Find(s => s.ID() == item.Key);
-                foreach(var dict in item.Value)
-                {
-                    var st2 = states.Find(s => s.ID() == dict.Value);
-                    st1.AddTransition(dict.Key , st2);
+                    f.AddTransition(v.Key, dfaStates[v.Value]);
                 }
             }
-            return new Automaton<T>(initialState, states,Alphabet());
+
+            return new Automaton<T>(dfaStates[resultofDeterministicAux.id], (dfaStates.Values).ToList(),Alphabet());
         }
         /// <summary>
         /// Change the actual state according to read symbol
@@ -131,7 +121,7 @@ namespace WallyInterpreter.Components.Interpreter.Automaton
         private struct AuxStructToDeterministic
         {
             public string id;
-            public IState<T>[][] states;
+            public List<HashSet<IState<T>>> states;
             public Dictionary<string, Dictionary<T, string>> transition;
         }
         private Dictionary<string, IState<T>[]> GetClousures()
@@ -143,68 +133,72 @@ namespace WallyInterpreter.Components.Interpreter.Automaton
             }
             return result;
         }
+        private IState<T> MakeCompositeState(HashSet<IState<T>> set)
+        {
+            var id = ComputedId(set);
+            bool isAccepting = set.Any(s => s.IsAccepting());
+            bool isFault= set.All(s => s.IsFault());
+            return new State<T>(id,isAccepting, isFault);
+        }
+        private string ComputedId(HashSet<IState<T>> set)
+        {
+            var sortedId= set.Select(s => s.ID()).OrderBy(id => id , StringComparer.Ordinal).ToList();
+            return string.Join(":", sortedId);
+        }
+
         private AuxStructToDeterministic AuxDeterministic()
         {
-            var initial = _start.Clousure();
-            var clousures = GetClousures();
-            List<IState<T>[]> states = new List<IState<T>[]>();
-            states.Add(initial);
-            Dictionary<string, Dictionary<T, string>> transition = new Dictionary<string, Dictionary<T, string>>();
-            bool state_added = true;
+            return AuxDeterministic(new StateComparer());
+        }
 
-            while (state_added)
+        private AuxStructToDeterministic AuxDeterministic(StateComparer stateComparer)
+        {
+            var initialSet = new HashSet<IState<T>>(_start.Clousure(),new StateComparer());
+            var cola = new Queue<HashSet<IState<T>>>();
+            cola.Enqueue(initialSet);
+            var see = new Dictionary<string, HashSet<IState<T>>>();
+            var transition = new Dictionary<string, Dictionary<T, string>>();
+
+            var initialId = ComputedId(initialSet);
+            see[initialId] = initialSet;
+            while (cola.Count > 0)
             {
-                state_added = false;
-                foreach (var state in states)
+                var currentSet = cola.Dequeue();
+                var currentId = ComputedId(currentSet);
+                transition[currentId] = new Dictionary<T, string>();
+                foreach (var symbol in _alphabet)
                 {
-                    IState<T> a_state = MakeStateFromStates(state);
-                    if (!transition.ContainsKey(a_state.ID()))
+                    HashSet<IState<T>> moveSet = new HashSet<IState<T>>((IEqualityComparer<IState<T>>?)new StateComparer());
+                    foreach( var st in currentSet)
                     {
-                        transition[a_state.ID()] = new Dictionary<T, string>();
-                    }
-                    foreach (var symbol in _alphabet)
-                    {
-                        List<IState<T>> move = new List<IState<T>>();
-                        foreach(var st in state)
-                        {
-                            if (!st.HasTransition(symbol))
-                            {
-                                continue;
-                            }
-                            var next = st.Next(symbol);
-                            move.Add(next);
-                            foreach(var e_st in clousures[next.ID()])
-                            {
-                                if (e_st.ID() != next.ID())
-                                    move.Add(e_st);
-                            }
-                        }
-                        if (move.Count == 0)
+                        if (!st.HasTransition(symbol))
                             continue;
-                        if(!AutomatonOperatorsAndTools<T>.SetStatesIsInSetofSetStates(states.ToArray(),move.ToArray()))
+                        var next = st.Next(symbol);
+                        moveSet.Add(next);
+                        foreach(var eps in GetClousures()[next.ID()])
                         {
-                            states.Add(move.ToArray());
-                            state_added = true;
-                            transition[a_state.ID()][symbol] = MakeStateFromStates(move.ToArray()).ID();
-                            break;
+                            moveSet.Add(eps);
                         }
-                        else
-                        {
-                            transition[a_state.ID()][symbol] = MakeStateFromStates(move.ToArray()).ID();   
-                        }
-
                     }
-                    if (state_added)
+                    if (moveSet.Count == 0)
+                        continue;
+                    var moveId = ComputedId(moveSet);
+                    transition[currentId][symbol] = moveId;
+                    if(!see.ContainsKey(moveId))
                     {
-                        break;
+                        see[moveId] = moveSet;
+                        cola.Enqueue(moveSet);
                     }
                 }
             }
-            AuxStructToDeterministic result;
-            result.id = MakeStateFromStates(initial).ID();
-            result.states = states.ToArray();
-            result.transition = transition;
-            return result;
+            return new()
+            {
+                id = initialId
+                ,
+                transition = transition
+                ,
+                states = see.Values.ToList()
+            };
         }
         private IState<T> MakeStateFromStates(IState<T>[] states)
         {
@@ -228,6 +222,16 @@ namespace WallyInterpreter.Components.Interpreter.Automaton
                 return s;
             };
             return $"start state: {_start.ID()} , {_alphabet.ToString()} " + S();
+        }
+        private class StateComparer : IEqualityComparer<IState<T>>
+        {
+            public bool Equals(IState<T> x, IState<T> y)
+              => x is not null
+                 && y is not null
+                 && x.ID() == y.ID();
+
+            public int GetHashCode(IState<T> obj)
+              => obj.ID().GetHashCode();
         }
     }
 }

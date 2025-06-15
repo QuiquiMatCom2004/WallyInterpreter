@@ -1,0 +1,55 @@
+﻿@page "/canvas"
+@using Draw
+@rendermode InteractiveServer
+<h3>Dibujo de Wally</h3>
+
+<div class="canvas-grid"
+style="--rows:@CanvasBuff.Rows; --cols:@CanvasBuff.Cols;">
+    @for (int y = 0; y < CanvasBuff.Rows; y++)
+    {
+        @for (int x = 0; x < CanvasBuff.Cols; x++)
+        {
+            var color = (int)CanvasBuff.Matrix[y, x];
+            <div class="cell cell-@color"></div>
+        }
+    }
+</div>
+
+<div class="controls" style="align-self">
+    <input type="number" @bind= "size"/>
+    <button @onclick = "Resize">Redimensionar</button>
+</div>
+<div class="controls">
+    <button @onclick="Reset">🗑️ Limpiar</button>
+</div>
+
+
+
+@code{
+    private int size;
+    protected override void OnInitialized()
+    {
+        CanvasBuff.OnChanged += TriggerRender;
+    }
+
+    private void TriggerRender()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void Reset()
+    {
+        CanvasBuff.Clear();
+        Console.WriteLine("Limpieza ejecutada");
+    }
+
+    public void Dispose()
+    {
+        CanvasBuff.OnChanged -= TriggerRender;
+    }
+    public void Resize()
+    {
+        CanvasBuff.Resize(size);
+        Console.WriteLine($"Resize al tamano {CanvasBuff.Cols}");
+    }
+}

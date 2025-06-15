@@ -187,12 +187,12 @@ namespace WallyInterpreter.Components.Interpreter.Granmar
             {
                 if(symbol.Type() == GranmarSymbolType.Terminal)
                 {
-                    _first[symbol.Symbol()] = new List<IGranmarSymbol> { symbol };
+                    _first.Add(symbol.Symbol(), new List<IGranmarSymbol> { symbol });
                     continue;
                 }
                 if(symbol.Type() == GranmarSymbolType.NonTerminal && DeriveInEpsilon(symbol))
                 {
-                    _first[symbol.Symbol()].Add(_terminals.First(s => s.Epsilon()));
+                    _first.Add(symbol.Symbol(),new() { _terminals.First(s => s.Epsilon()) });
                     continue;
                 }
                 _first[symbol.Symbol()] = new List<IGranmarSymbol>();

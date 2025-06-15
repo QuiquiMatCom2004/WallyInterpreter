@@ -1,0 +1,36 @@
+﻿@page "/error"
+
+<h3>Errors</h3>
+
+
+@if(errors != string.Empty)
+{
+	<p>@errors</p>
+}
+else
+{
+	<p> ... Loading...</p>
+}
+<button @onclick = "ChargeError">ChargeErrorList</button>
+
+@code {
+	private string path = "Logs/errors.log";
+	private HttpClient _http = new HttpClient();
+	private string errors = string.Empty;
+	private async Task ChargeError()
+	{
+		try
+		{
+			errors = await _http.GetStringAsync(path);
+			StateHasChanged();
+		}
+		catch
+		{
+			errors = "Not Found errors.log";
+		}
+		finally
+		{
+			Console.WriteLine("Charged Errors");
+		}
+	}
+}

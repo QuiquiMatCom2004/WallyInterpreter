@@ -93,14 +93,13 @@ namespace WallyInterpreter.Components.Interpreter.Lexer
                 {
                     if (_textPointer == 0)
                     {
-                        if (_code[_textPointer] != ' ' && _code[_textPointer] != '\n')
+                        if (_code[_textPointer] != ' ' && _code[_textPointer] != '$')
                         {
                             _currentToken = _extractorToken.GetToken(lastTokentypes.ToArray(), _code[0].ToString(), _line, _column);
                         }
-                        else if (_code[_textPointer] == '\n')
+                        else if (_code[_textPointer] == '$')
                         {
-                            _column = 1;
-                            _line++;
+                            _currentToken = new Token(_line, _column++, "$", Tokentype.Garbage);
                         }
                         else
                         {

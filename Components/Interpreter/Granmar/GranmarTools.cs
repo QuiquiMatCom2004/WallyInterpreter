@@ -33,7 +33,7 @@
         }
         public static IGranmar Union(IGranmar[] granmars, string start_symbol_id) 
         {
-            if (granmars.Length < 2) throw new Exception("Granmar need at less 2 elements");
+            if (granmars.Length < 2) throw new Exception("Need at less 2 granmars");
             IGranmarSymbol start_symbol = new GranmarSymbol(start_symbol_id, false, GranmarSymbolType.NonTerminal);
             IGranmar g_result = new Granmar(start_symbol);
             foreach (var granmar in granmars) {
