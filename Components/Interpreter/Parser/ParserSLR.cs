@@ -19,7 +19,6 @@ namespace WallyInterpreter.Components.Interpreter.Parser
         private Dictionary<string, Func<IAST[],string,IAST>> _reductionFunction = new Dictionary<string, Func<IAST[], string, IAST>>();
         private string _endmarker;
         private List<string> _terminals = new List<string>();
-        private Dictionary<string, Dictionary<string, string>> _goto = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
         public ParserSLR(IGranmar g, IGranmarSymbol endmarker, Func<IToken, string, IAST> ast_engine)
         {
             _ast_engine = ast_engine;
@@ -29,47 +28,18 @@ namespace WallyInterpreter.Components.Interpreter.Parser
 
             var tools = new ParserTools();
             var canonical = tools.GetCanonicalLR0Collection(G).ToList();
-            /*
-            // 1) Muestra el contenido de cada estado
-            for (int i = 0; i < canonical.Count; i++)
-            {
-                Console.WriteLine($"\n--- Estado I{i} ---");
-                foreach (var item in canonical[i])
-                {
-                    // Representamos A→α·β
-                    var left = string.Join(" ", item.LeftPoint.Select(s => s.Symbol()));
-                    var right = string.Join(" ", item.RightPoint.Select(s => s.Symbol()));
-                    Console.WriteLine($"  {item.Head.Symbol()} → {left} · {right}");
-                }
-
-                // 2) Muestra todas las GOTO (terminales y no-terminales)
-                Console.WriteLine("Transiciones:");
-                foreach (var sym in G.Terminals().Concat(G.NonTerminals()))
-                {
-                    var dest = tools.GOTO(canonical[i], sym, G);
-                    if (dest != null)
-                    {
-                        var j = canonical.FindIndex(s => s.ID == dest.ID);
-                        Console.WriteLine($"   On `{sym.Symbol()}` → I{j}");
-                    }
-                }
-            }
-            */
             _states = canonical.Select((c, i) => (IState<string>)new State<string>($"I{i}", true, false)).ToList();
 
             foreach (var st in _states)
             {
                 _action[st.ID()] = new Dictionary<string, ActionStruct>(StringComparer.Ordinal);
-                _goto[st.ID()] = new Dictionary<string, string>(StringComparer.Ordinal);
             }
             for (int i = 0; i < canonical.Count; i++)
             {
                 var I_i = canonical[i];
                 var stateId = _states[i].ID();
-                var realTerms = G.Terminals()
-                .Where(t => !t.Epsilon())
-                .ToArray();
-                foreach (var term in realTerms)
+                var allsyms = G.Terminals().Concat(G.NonTerminals());
+                foreach (var term in allsyms)
                 {
                     var J = tools.GOTO(I_i, term, G);
                     if (J != null)
@@ -79,20 +49,6 @@ namespace WallyInterpreter.Components.Interpreter.Parser
 
                         _action[stateId][sym]
                           = new ActionStruct(ParserAction.Shift, _states[j].ID());
-                        _states[i].AddTransition(sym, _states[j]);
-                    }
-                }
-                foreach (var nt in G.NonTerminals())
-                {
-                    var J = tools.GOTO(I_i, nt, G);
-                    if (J != null)
-                    {
-                        int j = canonical.FindIndex(c => c.ID == J.ID);
-                        var sym = nt.Symbol();
-
-                        
-                        _goto[stateId][sym] = _states[j].ID();
-
                         _states[i].AddTransition(sym, _states[j]);
                     }
                 }
@@ -134,21 +90,10 @@ namespace WallyInterpreter.Components.Interpreter.Parser
             }
 
             int startIdx = canonical.FindIndex(
-        c => c.All(it => it.LeftPoint.Length == 0));
+             c => c.All(it => it.LeftPoint.Length == 0));
             _startState = _states[startIdx];
             _stateStack.Add(_startState);
             _terminals = G.Terminals().Select(t => t.Symbol()).ToList();
-            /*
-            for(int i =0; i < canonical.Count ; i++){
-                Console.WriteLine($"=== ACTION table for I{i} ===");
-                foreach (var tok in _action[$"I{i}"].Keys)
-                     Console.WriteLine($" I{i}, '{tok}' -> {_action["I0"][tok].Action}");
-
-                Console.WriteLine("=== GOTO  table for I0 ===");
-                foreach (var nt in _goto[$"I{i}"].Keys)
-                    Console.WriteLine($" I{i}, <{nt}> -> {_goto["I0"][nt]}");
-            }
-            */
         }
         public Dictionary<string, Dictionary<string, ActionStruct>> ActionTable()
         {
@@ -211,7 +156,7 @@ namespace WallyInterpreter.Components.Interpreter.Parser
                         reduced = true;
                         Draw.Information.actions.Enqueue(action.Action);
                         var red = _reduce[currentState][ast.Symbol];
-                        var head = red.NewSymbol;       // el A
+                        var head = red.NewSymbol;       
                         var rhs = red.Symbols;
 
                         var children = _stack.GetRange(_stack.Count - rhs.Count, rhs.Count);
@@ -222,9 +167,9 @@ namespace WallyInterpreter.Components.Interpreter.Parser
 
                         _stack.Add(newAST);
                         var afterReduce = _stateStack.Last().ID();
-                        var gotoid = _goto[afterReduce][head];
-                        var gotoState = _states.Find(s => s.ID() == gotoid);
-                        _stateStack.Add(gotoState);
+                        action = _action[afterReduce][head];
+
+                        _stateStack.Add(_stateStack.Find(s=> s.ID() == action.NextState));
                         break;
                 }
             } while (reduced);
