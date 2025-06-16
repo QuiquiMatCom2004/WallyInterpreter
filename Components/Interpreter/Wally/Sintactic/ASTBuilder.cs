@@ -6,17 +6,11 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
 {
     public class ASTBuilder
     {
-        Dictionary<Tokentype,string> symbolsByToken = new Dictionary<Tokentype,string>();
-        Dictionary<string, Func<IAST, IAST, IContext, IErrorColector, object>> BinaryOperators = new Dictionary<string, Func<IAST, IAST, IContext, IErrorColector, object>>();
-        Dictionary<string, Func<IAST, IContext, IErrorColector, object>> UnaryOperators = new Dictionary<string, Func<IAST, IContext, IErrorColector, object>>();
+        public Dictionary<string, Func<IAST, IAST, IContext, IErrorColector, object>> BinaryOperators = new Dictionary<string, Func<IAST, IAST, IContext, IErrorColector, object>>();
+        public Dictionary<string, Func<IAST, IContext, IErrorColector, object>> UnaryOperators = new Dictionary<string, Func<IAST, IContext, IErrorColector, object>>();
 
         public ASTBuilder()
         {
-            symbolsByToken[Tokentype.Number] = "number";
-            symbolsByToken[Tokentype.String] = "string";
-            symbolsByToken[Tokentype.Boolean] = "boolean";
-            symbolsByToken[Tokentype.Identifier] = "id";
-
 
             BinaryOperators["+"] = (l,r,context,colector) => {
                 var a = l.Eval(context, colector);
@@ -225,46 +219,30 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
         }
         public IAST Build(IToken token,string endmarker)
         {
-            switch(token.Type())
+            var raw = token.Lexeme().Trim();
+            string sym;
+            try
             {
-                case Tokentype.Number:
-                    var val = float.Parse(token.Lexeme());
-                    return new AtomicAST(symbolsByToken[token.Type()], token.Line(), token.Column(), val);
-                case Tokentype.Boolean:
-                    var val1 = bool.Parse(token.Lexeme());
-                    return new AtomicAST(symbolsByToken[token.Type()], token.Line(), token.Column(), val1);
-                case Tokentype.String:
-                    return new AtomicAST(symbolsByToken[token.Type()], token.Line(), token.Column(), token.Lexeme());
-                case Tokentype.Identifier:
-                    return new VariableAST(symbolsByToken[token.Type()],token.Line(),token.Column(),token.Lexeme());
-                case Tokentype.Symbol:
-                    if (token.Lexeme() == endmarker)
-                        return new AtomicAST(endmarker, token.Line(), token.Column(), endmarker);
-                    return new AtomicAST(token.Lexeme(), token.Line(), token.Column(), token.Lexeme());
-                case Tokentype.Keyword:
-                    switch (token.Lexeme())
-                    {
-                        case "Goto":
-                            return new AtomicAST(token.Lexeme(),token.Line(),token.Column(),token.Lexeme());
-                        default:
-                            return new GarbageAST(token.Lexeme(),token.Line(),token.Column(),token.Lexeme());
-                    }
-                case Tokentype.Operator:
-                    if (BinaryOperators.ContainsKey(token.Lexeme()))
-                    {
-                        return new BinaryAST(token.Lexeme(), token.Line(), token.Column(), BinaryOperators[token.Lexeme()]);
-                    }
-                    if (UnaryOperators.ContainsKey(token.Lexeme()))
-                    {
-                        return new UnaryAST(token.Lexeme(), token.Line(), token.Column(), UnaryOperators[token.Lexeme()]);
-                    }
-                    throw new Exception($"Operator {token.Lexeme()} not implemented");
-                case Tokentype.EOL:
-                    return new AtomicAST(token.Lexeme(), token.Line(), token.Column(), token.Lexeme()) ;
-                default:
-                    return new GarbageAST(token.Lexeme(),token.Line(),token.Column(), token.Lexeme());
-
+                sym = token.Type() switch
+                {
+                    Tokentype.Identifier => "id",
+                    Tokentype.Number => "number",
+                    Tokentype.Boolean => "boolean",
+                    Tokentype.String => "string",
+                    Tokentype.EOL => "EOL",
+                    Tokentype.Keyword => raw,
+                    Tokentype.Symbol => raw,
+                    Tokentype.Operator => raw
+                };
+            }catch
+            {
+                return new GarbageAST(token.Lexeme(), token.Line(), token.Column(), token);
             }
+            return new AtomicAST(
+                sym,
+                token.Line(),
+                token.Column(),
+                token.Lexeme());
         }
     }
 }

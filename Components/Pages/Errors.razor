@@ -1,36 +1,68 @@
 ﻿@page "/error"
+@using Components.Interpreter.Tokens
+@using Components.Interpreter.Parser
+@using Components.Interpreter.Semantic
+@rendermode InteractiveServer
 
 <h3>Errors</h3>
 
 
-@if(errors != string.Empty)
-{
-	<p>@errors</p>
-}
-else
-{
-	<p> ... Loading...</p>
-}
-<button @onclick = "ChargeError">ChargeErrorList</button>
+<div> 
+	<section>
+		@if(errors.Count  > 0)
+		{
+			foreach (var err in errors)
+			{
+				<span >@err.Message</span>
+			}
+		}
+
+	</section>
+	<section>
+		@if (tokens.Count > 0)
+		{
+			foreach (var err in tokens)
+			{
+				<span>@err.ToString()</span>
+			}
+		}
+
+	</section>
+	<section>
+		@if (asts.Count > 0)
+		{
+			foreach (var err in asts)
+			{
+				<span>@err.Symbol</span>
+			}
+		}
+
+	</section>
+	<section>
+		@if (actions.Count > 0)
+		{
+			while(actions.Count > 0)
+			{
+				var i = actions.Dequeue();
+				<span> @i.ToString()</span>
+			}
+		}
+
+	</section>
+
+</div>
+<button @onclick = "ChargeInformation">ChargeErrorList</button>
 
 @code {
-	private string path = "Logs/errors.log";
-	private HttpClient _http = new HttpClient();
-	private string errors = string.Empty;
-	private async Task ChargeError()
+	private List<IError> errors = new();
+	private List<IToken> tokens = new();
+	private Queue<ParserAction> actions = new();
+	private List<IAST> asts = new();
+	private void ChargeInformation()
 	{
-		try
-		{
-			errors = await _http.GetStringAsync(path);
-			StateHasChanged();
-		}
-		catch
-		{
-			errors = "Not Found errors.log";
-		}
-		finally
-		{
-			Console.WriteLine("Charged Errors");
-		}
+		errors = Draw.Information.errors;
+		tokens = Draw.Information.tokens;
+		actions = Draw.Information.actions;
+		asts = Draw.Information.asts;
 	}
 }

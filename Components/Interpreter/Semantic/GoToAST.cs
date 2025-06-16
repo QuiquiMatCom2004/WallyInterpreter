@@ -22,6 +22,7 @@ namespace WallyInterpreter.Components.Interpreter.Semantic
 
         public override object Eval(IContext context, IErrorColector colector)
         {
+            Draw.Information.asts.Add(this);
             var c = condition.Eval(context, colector);
             if(c is bool b && b)
             {

@@ -12,6 +12,7 @@ namespace WallyInterpreter.Components.Interpreter.Semantic
 
         public override object Eval(IContext context, IErrorColector colector)
         {
+            Draw.Information.asts.Add(this);
             var val = expresion.Eval(context, colector);
             //Cambiar en el contexto global
             context.SetVariables(Symbol, val);

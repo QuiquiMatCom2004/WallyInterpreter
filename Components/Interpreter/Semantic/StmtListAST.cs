@@ -4,7 +4,7 @@ namespace WallyInterpreter.Components.Interpreter.Semantic
 {
     public class StmtListAST : AbstractAST
     {
-        public List<IAST> statements;
+        public List<IAST> statements { get; }
         private Dictionary<string, int> _labelPos;
         public StmtListAST(IAST[] statements, int line, int column) : base("BLOCK", line, column)
         {
@@ -22,6 +22,7 @@ namespace WallyInterpreter.Components.Interpreter.Semantic
 
         public override object Eval(IContext context, IErrorColector colector)
         {
+            Draw.Information.asts.Add(this);
             var localcontext = new Context(context);
             int pos = 0;
             while (pos < statements.Count()) { 

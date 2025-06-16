@@ -10,6 +10,7 @@ namespace WallyInterpreter.Components.Interpreter.Semantic
         }
         public override object Eval(IContext context, IErrorColector colector)
         {
+            Draw.Information.asts.Add(this);
             try
             {
                 if (context.GetVariables(_name) == null)

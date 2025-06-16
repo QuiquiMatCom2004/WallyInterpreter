@@ -16,7 +16,7 @@
 {
 	private StandaloneCodeEditor editor = null!;
 	private string FileName = "miPrograma";
-	private WallyInterpreter.Components.Interpreter.Wally.WallyInterpreter wally = new Interpreter.Wally.WallyInterpreter();
+	private WallyInterpreter.Components.Interpreter.Wally.WallyInterpreter wally = null!;
 	private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
 	{
 		return new StandaloneEditorConstructionOptions()
@@ -37,6 +37,7 @@
 	}
 	private async Task Compile()
 	{
+		wally = new Interpreter.Wally.WallyInterpreter();
 		try
 		{
 			var code = await editor.GetValue();

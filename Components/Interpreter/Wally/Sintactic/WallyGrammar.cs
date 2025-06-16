@@ -1,4 +1,5 @@
-﻿using WallyInterpreter.Components.Interpreter.Errors;
+﻿using BlazorMonaco.Languages;
+using WallyInterpreter.Components.Interpreter.Errors;
 using WallyInterpreter.Components.Interpreter.Granmar;
 
 namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
@@ -28,7 +29,7 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
             #endregion
             #region Terminals
             //Types
-            var id = new GranmarSymbol("id",false, GranmarSymbolType.Terminal);
+            var id = new GranmarSymbol("id", false, GranmarSymbolType.Terminal);
             var boolean = new GranmarSymbol("boolean", false, GranmarSymbolType.Terminal);
             var str = new GranmarSymbol("string", false, GranmarSymbolType.Terminal);
             var number = new GranmarSymbol("number", false, GranmarSymbolType.Terminal);
@@ -54,73 +55,68 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
             var rparent = new GranmarSymbol(")", false, GranmarSymbolType.Terminal);
             var lcorchete = new GranmarSymbol("[", false, GranmarSymbolType.Terminal);
             var rcorchete = new GranmarSymbol("]", false, GranmarSymbolType.Terminal);
-            var arrow = new GranmarSymbol("->", false, GranmarSymbolType.Terminal);
+            var arrow = new GranmarSymbol("<-", false, GranmarSymbolType.Terminal);
             var coma = new GranmarSymbol(",", false, GranmarSymbolType.Terminal);
             //EOL
             var EOL = new GranmarSymbol("EOL", false, GranmarSymbolType.Terminal);
             //Keys
-            var goTo = new GranmarSymbol("Goto",false, GranmarSymbolType.Terminal);
+            var goTo = new GranmarSymbol("Goto", false, GranmarSymbolType.Terminal);
             #endregion
             #region ProductionDefinition
-            //Program
-            var gProgram = new Granmar.Granmar(Program);
-            gProgram.AddProduction(Program, new[] { StmtList });//
-            //Stament List
-            gProgram.AddProduction(StmtList, new[] { Statement, EOL, StmtList });//
-            gProgram.AddProduction(StmtList, new[] { Statement });//
-            //Statement
-            gProgram.AddProduction(Statement, new[] { AssignStmt });//
-            gProgram.AddProduction(Statement, new[] { ExprStmt });//
-            gProgram.AddProduction(Statement, new[] { GotoStmt });//
-            gProgram.AddProduction(Statement, new[] { LabelDecl });//
-            //Assignacion
-            gProgram.AddProduction(AssignStmt, new[] { id, arrow, ExprStmt });//
-            //Label
-            gProgram.AddProduction(LabelDecl, new[] { id });//
-            //Goto
-            gProgram.AddProduction(GotoStmt, new[] { goTo, lcorchete,LabelDecl,rcorchete, lparent,BoolExpr,rparent});//
-            //Expresions
-            gProgram.AddProduction(ExprStmt, new[] { BoolExpr });//
-            //Booleans Expression
-            gProgram.AddProduction(BoolExpr, new[] { BoolExpr, and, BoolExpr});//
-            gProgram.AddProduction(BoolExpr, new[] { BoolExpr, or, BoolExpr });//
-            gProgram.AddProduction(BoolExpr, new[] { not, BoolExpr });//
-            gProgram.AddProduction(BoolExpr, new[] { BoolExpr, RelOP, BoolExpr });//
-            gProgram.AddProduction(BoolExpr, new[] { ArithExpr });//
-            //Relation Operators
-            gProgram.AddProduction(RelOP, new[] {compareEqual });//
-            gProgram.AddProduction(RelOP, new[] { lessEqual });//
-            gProgram.AddProduction(RelOP, new[] { moreEqual });//
-            gProgram.AddProduction(RelOP, new[] { less });//
-            gProgram.AddProduction(RelOP, new[] { more });//
-            //Aritmetic expresion
-            gProgram.AddProduction(ArithExpr, new[] {Term,plus,ArithExpr });//
-            gProgram.AddProduction(ArithExpr, new[] { Term, minus, ArithExpr });//
-            gProgram.AddProduction(ArithExpr, new[] { Term});//
-            //Term
-            gProgram.AddProduction(Term, new[] {Power,mult,Term });//
-            gProgram.AddProduction(Term, new[] { Power, div, Term });//
-            gProgram.AddProduction(Term, new[] { Power, mod, Term });//
-            gProgram.AddProduction(Term, new[] { Power});//
-            //Power
-            gProgram.AddProduction(Power, new[] {Factor , expo, Power });//
-            gProgram.AddProduction(Power, new[] { Factor });//
-            //Factor
-            gProgram.AddProduction(Factor, new[] { number });//
-            gProgram.AddProduction(Factor, new[] { boolean });//
-            gProgram.AddProduction(Factor, new[] { str });//
-            gProgram.AddProduction(Factor, new[] { id });//
-            gProgram.AddProduction(Factor, new[] { FuncCall });//
-            gProgram.AddProduction(Factor, new[] { lparent, ExprStmt, rparent });//
-            //Function call
-            gProgram.AddProduction(FuncCall, new[] { id , lparent,Args,rparent});//
-            //Arguments
-            gProgram.AddProduction(Args, new[] { ArgList });//
-            gProgram.AddProduction(Args, new[] { epsilon });//
-            gProgram.AddProduction(ArgList, new[] { ExprStmt });//
-            gProgram.AddProduction(ArgList, new[] { ExprStmt , coma, ArgList});//
+            var g = new Granmar.Granmar(Program);
+
+
+            g.AddProduction(Program, new[] { StmtList });
+            g.AddProduction(StmtList, new[] { Statement, EOL, StmtList });
+            g.AddProduction(StmtList, new[] { Statement });
+            g.AddProduction(Statement, new[] { LabelDecl });
+            g.AddProduction(Statement, new[] { AssignStmt });
+            g.AddProduction(Statement, new[] { GotoStmt });
+            g.AddProduction(Statement, new[] { ExprStmt });
+            g.AddProduction(LabelDecl, new[] { id });
+
+            g.AddProduction(AssignStmt, new[] { id, arrow, ExprStmt });
+
+
+            g.AddProduction(GotoStmt, new[] { goTo, lcorchete, LabelDecl, rcorchete, lparent, BoolExpr, rparent });
+
+            g.AddProduction(ExprStmt, new[] { BoolExpr });
+            g.AddProduction(BoolExpr, new[] { BoolExpr, and, BoolExpr });
+            g.AddProduction(BoolExpr, new[] { BoolExpr, or, BoolExpr });
+            g.AddProduction(BoolExpr, new[] { not, BoolExpr });
+            g.AddProduction(BoolExpr, new[] { BoolExpr, RelOP, BoolExpr });
+            g.AddProduction(BoolExpr, new[] { ArithExpr });
+            g.AddProduction(RelOP, new[] { compareEqual });
+            g.AddProduction(RelOP, new[] { lessEqual });
+            g.AddProduction(RelOP, new[] { moreEqual });
+            g.AddProduction(RelOP, new[] { less });
+            g.AddProduction(RelOP, new[] { more });
+
+            g.AddProduction(ArithExpr, new[] { Term, plus, ArithExpr });
+            g.AddProduction(ArithExpr, new[] { Term, minus, ArithExpr });
+            g.AddProduction(ArithExpr, new[] { Term });
+            g.AddProduction(Term, new[] { Power, mult, Term });
+            g.AddProduction(Term, new[] { Power, div, Term });
+            g.AddProduction(Term, new[] { Power, mod, Term });
+            g.AddProduction(Term, new[] { Power });
+            g.AddProduction(Power, new[] { Factor, expo, Power });
+            g.AddProduction(Power, new[] { Factor });
+
+            g.AddProduction(Factor, new[] { number });
+            g.AddProduction(Factor, new[] { boolean });
+            g.AddProduction(Factor, new[] { str });
+            g.AddProduction(Factor, new[] { id });
+            g.AddProduction(Factor, new[] { FuncCall });
+            g.AddProduction(Factor, new[] { lparent, ExprStmt, rparent });
+            g.AddProduction(FuncCall, new[] { id, lparent, Args, rparent });
+            g.AddProduction(Args, new[] { ArgList });
+            g.AddProduction(Args, new[]{epsilon});
+
+            g.AddProduction(ArgList, new[] { ExprStmt });
+            g.AddProduction(ArgList, new[] { ExprStmt, coma, ArgList });
+
+            Wally = g;
             #endregion
-            Wally = gProgram;
         }
     }
 }

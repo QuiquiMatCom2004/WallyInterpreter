@@ -19,10 +19,10 @@ namespace WallyInterpreter.Components.Interpreter.Wally
             lexer.AddTokenExpresion(Tokens.Tokentype.Keyword, 0, new KeywordsGranmar().KeyGranmar);
             lexer.AddTokenExpresion(Tokens.Tokentype.Boolean, 1, new BooleanGranmar().Boolean);
             lexer.AddTokenExpresion(Tokens.Tokentype.Number, 2, new NumberGrammar().Number);
+            lexer.AddTokenExpresion(Tokens.Tokentype.String,3 , new StringGrammar().StringGranmar);
+            lexer.AddTokenExpresion(Tokens.Tokentype.Symbol,4,new SymbolsGranmar().Symbols);
             lexer.AddTokenExpresion(Tokens.Tokentype.Operator, 5, new OperatorGrammar().Operator);
-            lexer.AddTokenExpresion(Tokens.Tokentype.Identifier, 4, new IdentifierGrammar().Identifier);
-            lexer.AddTokenExpresion(Tokens.Tokentype.Symbol,3,new SymbolsGranmar().Symbols);
-            lexer.AddTokenExpresion(Tokens.Tokentype.String, 6, new StringGrammar().StringGranmar);
+            lexer.AddTokenExpresion(Tokens.Tokentype.Identifier, 6, new IdentifierGrammar().Identifier);
             lexer.AddTokenExpresion(Tokens.Tokentype.EOL, 7, new EOLGranmar().granmar);
 
             var identRule = new LexicalRule("Variables must be start with a letter", (token) => { 

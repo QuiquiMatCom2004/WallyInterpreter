@@ -16,5 +16,7 @@ namespace WallyInterpreter.Components.Interpreter.Parser
         string StartState();
         Dictionary<string, Dictionary<string, ActionStruct>> ActionTable();
         Dictionary<string, Dictionary<string, ReduceStruct>> ReduceTable();
+
+        void Reset();
     }
 }

@@ -6,7 +6,7 @@
 
         public FaultNodeException()
         {
-            Console.WriteLine(mensaje);
+            
         }
 
         public FaultNodeException(string? message) : base(message)

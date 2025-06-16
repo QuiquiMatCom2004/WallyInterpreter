@@ -8,20 +8,13 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
     {
         public static IAST BinaryOperatorReduction(IAST[] asts,string newSymbol)
         {
-            if (asts[1] is GarbageAST g) return g;
-            var binary = (BinaryAST) asts[1];
-            binary.Left = asts[0];
-            binary.Right = asts[2];
-            binary.UpdateSymbol(newSymbol);
-            return binary;
+            var builder = new ASTBuilder();
+            return new BinaryAST(asts[1].Symbol, asts[1].Line, asts[1].Column, builder.BinaryOperators[asts[1].Symbol], asts[0], asts[2]);
         }
         public static IAST UnaryOperatorReduction(IAST[] asts,string newSymbol)
         {
-            if (asts[0] is GarbageAST g) return g;
-            var op = (UnaryAST)asts[0];
-            op.target = asts[1];
-            op.UpdateSymbol(newSymbol);
-            return op;
+            var builder = new ASTBuilder();
+            return new UnaryAST(asts[0].Symbol, asts[0].Line, asts[0].Column, builder.UnaryOperators[asts[0].Symbol], asts[1]);
         }
         public static IAST InBettewnExtractorReduction(IAST[] asts,string newSymbol)
         {
@@ -44,8 +37,8 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
         }
         public static IAST LabelReductor(IAST[] asts,string newSymbol)
         {
-            var node = (AtomicAST)asts[0];
-            return new LabelAST(node.Eval(new Context(),new ErrorColector()).ToString(), node.Line, node.Column);
+           var node = asts[0];
+           return new LabelAST(node.Symbol, node.Line, node.Column);
         }
         public static IAST GotoReductor(IAST[] asts,string newSymbol)
         {
@@ -56,19 +49,9 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
         public static IAST FunctionCallReductor(IAST[] asts,string newSymbol)
         {
             var idNode = (AtomicAST)asts[0];
-            List<IAST> args = new List<IAST>();
-            int pos = 2;
-            while (asts[pos].Symbol != ")")
-            {
-                if (asts[pos].Symbol == ",")
-                {
-                    pos++;
-                    continue;
-                }
-                args.Add(asts[pos]);
-                pos++;
-            }
-            return new FuncCallAST(idNode.Eval(new Context(), new ErrorColector()).ToString(), args.Last().Line, args.Last().Column + 1,args.ToArray());
+            var args = (StmtListAST)asts[1];
+            var arg = args.statements;
+            return new FuncCallAST(idNode.Symbol,idNode.Line, idNode.Column,arg.ToArray());
         }
     }
 }
