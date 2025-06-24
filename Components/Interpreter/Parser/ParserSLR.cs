@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualBasic;
+﻿using System.Reflection.Metadata.Ecma335;
+using Microsoft.VisualBasic;
 using WallyInterpreter.Components.Interpreter.Automaton;
 using WallyInterpreter.Components.Interpreter.Errors;
 using WallyInterpreter.Components.Interpreter.Granmar;
@@ -23,77 +24,116 @@ namespace WallyInterpreter.Components.Interpreter.Parser
         {
             _ast_engine = ast_engine;
             _endmarker = endmarker.Symbol();
+            //Gramatica Augmented
             var G = GranmarTools.Augment(g);
             G.MakeFirstAndFollow(endmarker);
 
+            
+            //Construir el canonico para la gramatica aumentada
             var tools = new ParserTools();
-            var canonical = tools.GetCanonicalLR0Collection(G).ToList();
-            _states = canonical.Select((c, i) => (IState<string>)new State<string>($"I{i}", true, false)).ToList();
+            var canonical = tools.GetCanonicalLR0Collection(G);
+            _states = canonical.Select((c, i) => {
+                var s = new State<string>($"I{i}", true, false);
+                return (IState<string>)s; 
+            }).ToList();
+            //Construccion del estado i construido a partir del canonico Ii 
 
-            foreach (var st in _states)
-            {
-                _action[st.ID()] = new Dictionary<string, ActionStruct>(StringComparer.Ordinal);
-            }
-            for (int i = 0; i < canonical.Count; i++)
-            {
-                var I_i = canonical[i];
-                var stateId = _states[i].ID();
-                var allsyms = G.Terminals().Concat(G.NonTerminals());
-                foreach (var term in allsyms)
-                {
-                    var J = tools.GOTO(I_i, term, G);
-                    if (J != null)
+            for (int i = 0; i < canonical.Length; i++) {
+                foreach (var item in canonical[i]) {
+                    if (item.RightPoint.Length > 0)
                     {
-                        int j = canonical.FindIndex(c => c.ID == J.ID);
-                        var sym = term.Symbol();
-
-                        _action[stateId][sym]
-                          = new ActionStruct(ParserAction.Shift, _states[j].ID());
-                        _states[i].AddTransition(sym, _states[j]);
-                    }
-                }
-            }
-            for (int i = 0; i < canonical.Count; i++)
-            {
-                var I_i = canonical[i];
-                var stateId = _states[i].ID();
-
-                foreach (var item in I_i)
-                {
-                    if (item.RightPoint.Length == 0 &&
-                        item.Head.Symbol() == G.StartSymbol().Symbol())
-                    {
-                        _action[stateId][_endmarker]
-                          = new ActionStruct(ParserAction.Accept, "");
-                        continue;
-                    }
-                    if (item.RightPoint.Length == 0 &&item.Head.Symbol() != G.StartSymbol().Symbol())
-                    {
-                        var head = item.Head.Symbol();
-                        var rhs = item.LeftPoint.Select(x => x.Symbol()).ToArray();
-                        var followA = G.Follow(item.Head);
-
-                        foreach (var a in followA)
+                        
+                        foreach (var term in G.Terminals())
                         {
-                            var sym = a.Symbol();
-                            _action[stateId][sym] =
-                                new ActionStruct(ParserAction.Reduce,"");
-
-                            if (!_reduce.ContainsKey(stateId))
-                                _reduce[stateId] = new Dictionary<string, ReduceStruct>();
-
-                            _reduce[stateId][sym] =
-                                new ReduceStruct(head, rhs);
+                            var go = tools.GOTO(canonical[i], term, G);
+                            if (go != null)
+                            {
+                                var nextState = canonical.ToList().FindIndex(coll => coll.ID == go.ID);
+                                _states[i].AddTransition(term.Symbol(), _states[nextState]);
+                                if (!_action.ContainsKey(_states[i].ID()))
+                                {
+                                    _action[_states[i].ID()] = new Dictionary<string, ActionStruct>();
+                                }
+                                if (_action[_states[i].ID()].TryGetValue(term.Symbol(), out var act))
+                                {
+                                    if (act.Action != _action[_states[i].ID()][term.Symbol()].Action)
+                                        throw new Exception("This grammar is not lr0");
+                                }
+                                _action[_states[i].ID()][term.Symbol()] = new ActionStruct(ParserAction.Shift, _states[nextState].ID());
+                            }
                         }
                     }
+                    else if (item.RightPoint.Length == 0 && item.Head.Symbol() != G.StartSymbol().Symbol())
+                    {
+                        foreach (var term in G.Follow(item.Head))
+                        {
+                            if (!_action.ContainsKey(_states[i].ID()))
+                            {
+                                _action[_states[i].ID()] = new Dictionary<string, ActionStruct>();
+                            }
+                            if (_action[_states[i].ID()].TryGetValue(term.Symbol(), out var act))
+                            {
+                                if (act.Action != _action[_states[i].ID()][term.Symbol()].Action)
+                                    throw new Exception("This grammar is not lr0");
+                            }
+                            _action[_states[i].ID()][term.Symbol()] = new ActionStruct(ParserAction.Reduce, "");
+                            if (!_reduce.ContainsKey(_states[i].ID()))
+                            {
+                                _reduce[_states[i].ID()] = new Dictionary<string, ReduceStruct>();
+                            }
+                            _reduce[_states[i].ID()][term.Symbol()] = new ReduceStruct(item.Head.Symbol(), item.LeftPoint.Select(s => s.Symbol()).ToArray());
+                        }
+                    }
+                    else if (item.RightPoint.Length == 0 && item.Head.Symbol() == G.StartSymbol().Symbol())
+                    {
+                        if (!_action.ContainsKey(_states[i].ID()))
+                            _action[_states[i].ID()] = new Dictionary<string, ActionStruct>();
+                        _action[_states[i].ID()][_endmarker] = new ActionStruct(ParserAction.Accept, "");
+                    }
+                }
+
+                foreach(var nt in G.NonTerminals())
+                {
+                    var go = tools.GOTO(canonical[i], nt, g);
+                    if (go != null)
+                    {
+                        var nextState = canonical.ToList().FindIndex(coll => coll.ID == go.ID);
+                        _states[i].AddTransition(nt.Symbol(),_states[nextState]);
+                        if (!_action.ContainsKey(_states[i].ID()))
+                            _action[_states[i].ID()] = new Dictionary<string, ActionStruct>();
+                        if (_action[_states[i].ID()].TryGetValue(nt.Symbol(),out var act))
+                        {
+                            if (_action[_states[i].ID()][nt.Symbol()].Action != act.Action)
+                                throw new Exception("this grammar its not lr0");
+                        }
+                        _action[_states[i].ID()][nt.Symbol()] = new ActionStruct(ParserAction.Shift, _states[nextState].ID());
+                    }
+                }
+                //Faltan las ultimas reglas y algun retoque
+            }
+            _terminals = G.Terminals().Select(t => t.Symbol()).ToList();
+            var indexStart = canonical.Select((c) =>
+            {
+                foreach (var item in c)
+                {
+                    if (item.LeftPoint.Length > 0)
+                        return false;
+                }
+                return true;
+            });
+            _startState = _states[indexStart.ToList().FindIndex(b => b)];
+
+            _stateStack.Add(_startState);
+
+            string parsing_table = "";
+            foreach(var state in _action.Keys)
+            {
+                foreach(var terminal in _action[state].Keys)
+                {
+                    parsing_table += $"{state},{terminal} ------> {_action[state][terminal].Action},{_action[state][terminal].NextState}\n";
                 }
             }
-
-            int startIdx = canonical.FindIndex(
-             c => c.All(it => it.LeftPoint.Length == 0));
-            _startState = _states[startIdx];
-            _stateStack.Add(_startState);
-            _terminals = G.Terminals().Select(t => t.Symbol()).ToList();
+            File.WriteAllText("ParserTableSave.txt", parsing_table);
         }
         public Dictionary<string, Dictionary<string, ActionStruct>> ActionTable()
         {
@@ -112,11 +152,12 @@ namespace WallyInterpreter.Components.Interpreter.Parser
 
         public void Parse(IToken token, IErrorColector collector)
         {
+            
             var ast = _ast_engine(token, _endmarker);
             var currentState = _stateStack.Last().ID();
             Console.WriteLine($"Incoming AST.Symbol = '{ast.Symbol}'");
             Console.WriteLine($"Terminals in action[{currentState}] = {string.Join(",", _action[currentState].Keys.Select(k => $"'{k}'"))}");
-
+            Console.WriteLine($"Action {currentState} : {ast.Symbol}  -----> {_action[currentState][ast.Symbol].Action}");
 
             if (!_action[currentState].TryGetValue(ast.Symbol, out var action))
             {
@@ -136,13 +177,16 @@ namespace WallyInterpreter.Components.Interpreter.Parser
                 }
                 return;
             }
-            bool reduced = false;
+            bool reduced = true;
             do
             {
                 switch (action.Action)
                 {
                     case ParserAction.Accept:
                         Draw.Information.actions.Enqueue(action.Action);
+                        var next1 = _states.Find(s => s.ID() == action.NextState);
+                        _stateStack.Add(next1);
+                        _stack.Add(ast);
                         reduced = false;
                         break;
                     case ParserAction.Shift:
@@ -163,7 +207,7 @@ namespace WallyInterpreter.Components.Interpreter.Parser
                         _stack.RemoveRange(_stack.Count - rhs.Count, rhs.Count);
                         _stateStack.RemoveRange(_stateStack.Count - rhs.Count, rhs.Count);
 
-                        var newAST = _reductionFunction[head + "-->" + string.Join("", rhs)](children.ToArray(), head);
+                        var newAST = _reductionFunction[head + "-->" + string.Join(" ", rhs)](children.ToArray(), head);
 
                         _stack.Add(newAST);
                         var afterReduce = _stateStack.Last().ID();
