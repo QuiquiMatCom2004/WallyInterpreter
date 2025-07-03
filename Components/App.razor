@@ -36,8 +36,8 @@
               tokenizer: {
               root: [
                 [/".*?"/, 'string'],
-                [/\bgoto\b/, 'keyword'],
-                //[/\b(Spawn|GetCanvasSize|GetActualX|GetActualY|Color|Size|Fill|DrawLine|DrawRectangle|DrawCircle|GetColorCount|IsBrushColor|IsBrushSize|IsColor)\b/,'function']
+                [/\bgoto|true|false\b/, 'keyword'],
+                [/\bSpawn|GetCanvasSize|GetActualX|GetActualY|Color|Size|Fill|DrawLine|DrawRectangle|DrawCircle|GetColorCount|IsBrushColor|IsBrushSize|IsColor\b/,'function'],
                 [/\d+/, 'number'],
                 [/[[()]]/, 'delimiter'],
                 [/[a-zA-Z_]\w*/, 'identifier']

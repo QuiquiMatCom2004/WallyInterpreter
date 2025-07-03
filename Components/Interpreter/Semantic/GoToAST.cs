@@ -24,9 +24,17 @@ namespace WallyInterpreter.Components.Interpreter.Semantic
         {
             Draw.Information.asts.Add(this);
             var c = condition.Eval(context, colector);
-            if(c is bool b && b)
+            try
             {
-                return new GotoSignal((string)_label.Eval(context,colector));
+                var b = Convert.ToBoolean(c);
+                if (b)
+                {
+                    return new GotoSignal((string)_label.Eval(context, colector));
+                }
+            }
+            catch
+            {
+                colector.AddError(new Error($"La condicion de la sentencia goto debe ser un booleano, se ha recibido {c.GetType().Name}", Line, Column, ErrorType.Semantic));
             }
             return null;
         }

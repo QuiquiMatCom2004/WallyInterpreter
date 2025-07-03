@@ -165,6 +165,7 @@ namespace WallyInterpreter.Components.Interpreter.Parser
                         _stackStates.Pop();
                     }
                     asts.Reverse();
+                    Console.WriteLine(_reduce[_currentState][ast.Symbol].NewSymbol + "-->" + string.Join(" ", _reduce[_currentState][ast.Symbol].Symbols));
                     var newAST = _reduction[_reduce[_currentState][ast.Symbol].NewSymbol + "-->" + string.Join(" ", _reduce[_currentState][ast.Symbol].Symbols)](asts.ToArray(), _reduce[_currentState][ast.Symbol].NewSymbol);
                     _stack.Push(newAST);
                     _currentState = _stackStates.Peek();

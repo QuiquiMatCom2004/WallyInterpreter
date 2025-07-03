@@ -72,7 +72,6 @@
 			var mat = wally.canvas.Matrix;
 			state.SetMatrix(mat);
 			await Draw(mat);
-			//nav.NavigateTo("/canvas");
 		}
 	}
 	private void Resize()
@@ -84,7 +83,7 @@
 		{
 			for(int j = 0; j < size; j++)
 			{
-				mat[i,j] = Colors.Transparent;
+				mat[i,j] = Colors.White;
 			}
 		}
 		Draw(mat);
@@ -114,6 +113,7 @@
 	{
 		Colors.Black => "#000000",
 		Colors.Transparent => "#FFFFFF",
+		Colors.White => "#FFFFFF",
 		Colors.Red => "#b32121",
 		Colors.Green => "#26b050",
 		Colors.Yellow => "#fffd37",

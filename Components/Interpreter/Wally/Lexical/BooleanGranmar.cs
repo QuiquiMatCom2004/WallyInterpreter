@@ -8,8 +8,8 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Lexical
         public BooleanGranmar()
         {
             string[] literals  = new string[] {
-                "True",
-                "False"
+                "true",
+                "false"
             };
             Boolean = GranmarTools.GetWordsGrammar(literals);
         }

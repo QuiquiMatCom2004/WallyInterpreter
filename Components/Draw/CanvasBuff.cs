@@ -10,6 +10,7 @@
         Green = 5,
         Orange = 6,
         Purple = 7,
+        White = 8
     }
     public class CanvasBuff
     {
@@ -36,7 +37,7 @@
         {
             for (var y = 0; y < Rows; y++)
                 for (var x = 0; x < Cols; x++)
-                    Matrix[y, x] = Colors.Transparent;
+                    Matrix[y, x] = Colors.White;
             OnChanged?.Invoke();
         }
         public void Resize(int n)
