@@ -25,10 +25,16 @@ namespace WallyInterpreter.Components.Interpreter.Wally
             { "Orange",Colors.Orange},
             { "Purple",Colors.Purple},
         };
+        public GlobalFunctions() {
+            wallyStruct.X = -1;
+            wallyStruct.Y = -1;
+        }
         Colors actualColor = Colors.Transparent;
         int actualSizeBrush = 1;
         private void Draw(int x, int y,CanvasBuff canvas)
         {
+            if (actualColor == Colors.Transparent)
+                return;
             for (int i = x - (actualSizeBrush - 1) / 2; i < x + actualSizeBrush; i++) 
             {
                 for (int j = y - (actualSizeBrush - 1) / 2; j < y + actualSizeBrush; j++) 
@@ -46,7 +52,7 @@ namespace WallyInterpreter.Components.Interpreter.Wally
             if (x < 0 || canvas.Rows < x || y < 0 || canvas.Cols < y) {
                 throw new IndexOutOfRangeException();
             }
-            wallyStruct.X = x; wallyStruct.Y = y;
+            wallyStruct.X = x; wallyStruct.Y = y; 
         }
         public void Color(List<object> param)
         {

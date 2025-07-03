@@ -1,4 +1,5 @@
-﻿using WallyInterpreter.Components.Draw;
+﻿using System.Reflection;
+using WallyInterpreter.Components.Draw;
 using WallyInterpreter.Components.Interpreter.Errors;
 
 namespace WallyInterpreter.Components.Interpreter.Semantic
@@ -16,7 +17,8 @@ namespace WallyInterpreter.Components.Interpreter.Semantic
         public override object Eval(IContext context, IErrorColector colector)
         {
             Draw.Information.asts.Add(this);
-            var f = context.GetFuncion((string)Name.Eval(context,colector));
+            string name = (string)Name.Eval(context, colector);
+            var f = context.GetFuncion(name);
             try
             {
                 List<object> _params = new List<object>();
@@ -29,7 +31,9 @@ namespace WallyInterpreter.Components.Interpreter.Semantic
                 return result;
             }
             catch (Exception ex) {
-                if (ex is IndexOutOfRangeException)
+                if (ex is TargetInvocationException)
+                    colector.AddError(new Error($"Ha habido un error al llamar el metodo {name}", Line, Column, ErrorType.Semantic));
+                else if (ex is IndexOutOfRangeException)
                 {
                     colector.AddError(new Error("Fuera de Rango deberias Redimensionar el Canvas", Line, Column, ErrorType.Semantic));
                 }

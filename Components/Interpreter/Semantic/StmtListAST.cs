@@ -14,32 +14,15 @@ namespace WallyInterpreter.Components.Interpreter.Semantic
 
         public override object Eval(IContext context, IErrorColector colector)
         {
-            Draw.Information.asts.Add(this);
-            var localcontext = new Context(context);
             int pos = 0;
-            Dictionary<string, int> _labelPos = new Dictionary<string, int>();
-            for (int i = 0; i < statements.Count; i++)
-                if (statements[i] is LabelAST lbl)
-                    _labelPos[(string)lbl.Eval(context,colector)] = i;
+            List<object> result = new List<object>();
             while (pos < statements.Count())
             {
                 var statement = statements[pos];
-                var res = statement.Eval(localcontext, colector);
-                if (res is GotoSignal sig)
-                {
-                    if (!_labelPos.ContainsKey(sig.label))
-                    {
-                        colector.AddError(new Error($"Label {sig.label} no declarado", statement.Line, statement.Column, ErrorType.Semantic));
-                        return null;
-                    }
-                    pos = _labelPos[sig.label];
-                }
-                else
-                {
-                    pos++;
-                }
+
+                result.Add(statement.Eval(context, colector));
             }
-            return statements;
+            return result;
         }
     }
 }

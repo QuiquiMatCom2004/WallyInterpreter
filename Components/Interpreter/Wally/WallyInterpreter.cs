@@ -73,7 +73,10 @@ namespace WallyInterpreter.Components.Interpreter.Wally
             parser.SetReduction("E-->T", ReductionFunctions.AtomicReductor);*/
 
             //AtomicReductions
-            parser.SetReduction("Program-->StmtList",ReductionFunctions.AtomicReductor);
+            parser.SetReduction("Program-->StmtList", (asts, s) =>
+            {
+                return new ProgramAST(s, asts[0].Line, asts[0].Column, asts[0]);
+            });
             parser.SetReduction("StmtList-->StmtList Statement EOL", ReductionFunctions.StmtListReduction);
             parser.SetReduction("StmtList-->StmtList EOL",ReductionFunctions.AtomicReductor);
             parser.SetReduction("StmtList-->EOL",ReductionFunctions.AtomicReductor);

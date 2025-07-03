@@ -1,0 +1,27 @@
+﻿@page "/errors"
+@inject NavigationManager nav
+
+<h3>ErrorDisplay</h3>
+
+<table class="mi-tabla">
+    <thead>
+        <tr>
+            <th>ErrorMessage</th>
+            <th>Line</th>
+            <th>Column</th>
+            <th>ErrorType</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach(var err in Draw.Information.errors)
+        {
+            <tr>
+                <td>@err.Message</td>
+                <td>@err.Line</td>
+                <td>@err.Column</td>
+                <td>@err.Type.ToString()</td>
+            </tr>
+        }
+    </tbody>
+</table>
+

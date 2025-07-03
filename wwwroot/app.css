@@ -186,3 +186,34 @@ h1:focus {
 canvas {
     image-rendering: pixelated; /* evita anti‐aliasing */
 }
+
+.mi-tabla {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .mi-tabla th,
+    .mi-tabla td {
+        border: 1px solid #ccc;
+        padding: 0.5rem;
+        text-align: left;
+    }
+
+    .mi-tabla thead {
+        background: #f4f4f4;
+    }
+@keyframes rustFlow {
+    from {
+        background-position: 0% 50%;
+    }
+
+    to {
+        background-position: 100% 50%;
+    }
+}
+
+.top-bar {
+    background: linear-gradient( to right, #b7410e, #cd7f32, #a0522d, #8b4000 );
+    background-size: 300% 300%;
+    animation: rustFlow 8s ease infinite alternate;
+}

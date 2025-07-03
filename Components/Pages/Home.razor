@@ -8,12 +8,13 @@
 <div class="split">
 	<div class="editor-panel">
 		<StandaloneCodeEditor CssClass="my_editor" @ref = "editor" ConstructionOptions="EditorConstructionOptions"/> 
+		<button style="text-align" @onclick="Compile">Compile</button>
+		<button @onclick="ShowErrors">ShowErrors</button>
 	</div>
 	<div class="canvas-panel" style="width:420px; height:420px">
 		<canvas id="wallyCanvas" style="background:#1e1e1e; image-rendering: pixelated; width:100%; height:100%;"></canvas>
 	</div>
 	<div class="controls">
-		<button style="text-align" @onclick="Compile">Compile</button>
 		<WallyInterpreter.Components.FileSystem.LoadButton OnLoaded="LoadSource"></WallyInterpreter.Components.FileSystem.LoadButton>
 		<div>
 			<InputText @bind-Value="FileName" />
@@ -103,10 +104,10 @@
 				arr[y * cols + x] = ColorToCSS(mat[y, x]);
 
 		await JS.InvokeVoidAsync("drawMatrixResponsive",
-								 "wallyCanvas",
-								 arr,
-								 rows,
-								 cols
+									"wallyCanvas",
+									arr,
+									rows,
+									cols
 		);
 	}
 	private string ColorToCSS(Colors color) => color switch
@@ -122,4 +123,8 @@
 
 		_ => "#000000"
 	};
+	private void ShowErrors()
+	{
+		nav.NavigateTo("/errors");
+	}
 }
