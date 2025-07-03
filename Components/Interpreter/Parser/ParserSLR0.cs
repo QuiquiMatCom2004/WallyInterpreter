@@ -144,37 +144,41 @@ namespace WallyInterpreter.Components.Interpreter.Parser
             bool reduced = true;
             while(reduced)
             {
-                if (_action[_currentState].ContainsKey(ast.Symbol) && _action[_currentState][ast.Symbol] == ParserAction.Shift)
+                if (_action[_currentState].TryGetValue(ast.Symbol, out var action))
                 {
-                    _stack.Push(ast);
-                    _currentState = _goTable[_currentState][ast.Symbol];
-                    _stackStates.Push(_currentState);
-                    reduced = false;
-                }
-                else if (_action[_currentState].ContainsKey(ast.Symbol) && _action[_currentState][ast.Symbol] == ParserAction.Accept)
-                {
-                    return;
-                }
-                else if (_action[_currentState].ContainsKey(ast.Symbol) && _action[_currentState][ast.Symbol] == ParserAction.Reduce)
-                {
-                    reduced = true;
-                    List<IAST> asts = new List<IAST>();
-                    for (int i = 0; i < _reduce[_currentState][ast.Symbol].Symbols.Count; i++)
+                    switch (action)
                     {
-                        asts.Add(_stack.Pop());
-                        _stackStates.Pop();
+                        case ParserAction.Shift:
+                            _stack.Push(ast);
+                            _currentState = _goTable[_currentState][ast.Symbol];
+                            _stackStates.Push(_currentState);
+                            reduced = false;
+                            break;
+                        case ParserAction.Accept:
+                            return;
+                        case ParserAction.Reduce:
+                            reduced = true;
+                            List<IAST> asts = new List<IAST>();
+                            for (int i = 0; i < _reduce[_currentState][ast.Symbol].Symbols.Count; i++)
+                            {
+                                asts.Add(_stack.Pop());
+                                _stackStates.Pop();
+                            }
+                            asts.Reverse();
+                            //Console.WriteLine(_reduce[_currentState][ast.Symbol].NewSymbol + "-->" + string.Join(" ", _reduce[_currentState][ast.Symbol].Symbols));
+                            var newAST = _reduction[_reduce[_currentState][ast.Symbol].NewSymbol + "-->" + string.Join(" ", _reduce[_currentState][ast.Symbol].Symbols)](asts.ToArray(), _reduce[_currentState][ast.Symbol].NewSymbol);
+                            _stack.Push(newAST);
+                            _currentState = _stackStates.Peek();
+                            _currentState = _goTable[_currentState][newAST.Symbol];
+                            _stackStates.Push(_currentState);
+                            break;
+                        default:
+                            throw new Exception($"Accion desconocida {action} en el estado {_currentState} para el simbolo {ast.Symbol}");
                     }
-                    asts.Reverse();
-                    Console.WriteLine(_reduce[_currentState][ast.Symbol].NewSymbol + "-->" + string.Join(" ", _reduce[_currentState][ast.Symbol].Symbols));
-                    var newAST = _reduction[_reduce[_currentState][ast.Symbol].NewSymbol + "-->" + string.Join(" ", _reduce[_currentState][ast.Symbol].Symbols)](asts.ToArray(), _reduce[_currentState][ast.Symbol].NewSymbol);
-                    _stack.Push(newAST);
-                    _currentState = _stackStates.Peek();
-                    _currentState = _goTable[_currentState][newAST.Symbol];
-                    _stackStates.Push(_currentState);
-
                 }
                 else
                     throw new Exception($"El estado actual I{_currentState} no contiene el simbolo {ast.Symbol}");
+                
             }
         }
 

@@ -52,10 +52,6 @@ namespace WallyInterpreter.Components.Interpreter.Interpreter
             }
             else
             {
-                foreach (var erros in _errorColector.GetErrors())
-                {
-                    Console.WriteLine(erros.Message);
-                }
                 throw new Exception("Interpretacion Process Failure");
             }
         }

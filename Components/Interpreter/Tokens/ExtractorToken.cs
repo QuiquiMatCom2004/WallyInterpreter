@@ -18,14 +18,11 @@ namespace WallyInterpreter.Components.Interpreter.Tokens
         }
         public IToken GetToken(Tokentype[] tokentypes, string text, int line, int column)
         {
-            Console.WriteLine(text);
             foreach (var p in _priorityOrder)
             {
                 var expectedTokenType = _priority[p];
                 if (tokentypes.Contains(expectedTokenType))
                 {
-                    Console.WriteLine(expectedTokenType);
-
                     return new Token(line, column, text, expectedTokenType);
                 }
                 
