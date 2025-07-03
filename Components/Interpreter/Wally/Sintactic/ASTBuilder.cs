@@ -15,26 +15,27 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
             BinaryOperators["+"] = (l,r,context,colector) => {
                 var a = l.Eval(context, colector);
                 var b = r.Eval(context, colector);
-                if (a is string sa && b is string sb)
-                    return sa + sb;
-                else if (a is int ia && b is int ib)
-                    return ia + ib;
-                else if (a is float fa && b is float fb)
-                    return fa + fb;
-                else
+                try
                 {
-                    colector.AddError(new Error($"Its not possible sum this elements {a} , {b}", r.Line, r.Column, ErrorType.Semantic));
-                    return null;
+                    var x = Convert.ToInt32(a);
+                    var y = Convert.ToInt32(b);
+                    return x + y;
+                }
+                catch
+                {
+                    var e = Convert.ToString(a);
+                    var d = Convert.ToString(b);
+                    return e + d;
                 }
             };
             BinaryOperators["-"] = (l, r, context, colector) => {
                 var a = l.Eval(context, colector);
                 var b = r.Eval(context, colector);
-                if (a is int ia && b is int ib)
-                    return ia - ib;
-                else if (a is float fa && b is float fb)
-                    return fa - fb;
-                else
+                try
+                {
+                    return Convert.ToInt32(a) - Convert.ToInt32(b);
+                }
+                catch
                 {
                     colector.AddError(new Error($"Its not possible rest this elements {a} , {b}", r.Line, r.Column, ErrorType.Semantic));
                     return null;
@@ -43,11 +44,10 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
             BinaryOperators["*"] = (l, r, context, colector) => {
                 var a = l.Eval(context, colector);
                 var b = r.Eval(context, colector);
-                if (a is int ia && b is int ib)
-                    return ia * ib;
-                else if (a is float fa && b is float fb)
-                    return fa * fb;
-                else
+                try
+                {
+                    return Convert.ToInt32(a) * Convert.ToInt32(b);
+                }catch
                 {
                     colector.AddError(new Error($"Its not possible multiply this elements {a} , {b}", r.Line, r.Column, ErrorType.Semantic));
                     return null;
@@ -56,11 +56,11 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
             BinaryOperators["/"] = (l, r, context, colector) => {
                 var a = l.Eval(context, colector);
                 var b = r.Eval(context, colector);
-                if (a is int ia && b is int ib)
-                    return ia / ib;
-                else if (a is float fa && b is float fb)
-                    return fa / fb;
-                else
+                try
+                {
+                    return Convert.ToInt32(a) / Convert.ToInt32(b);
+                }
+                catch
                 {
                     colector.AddError(new Error($"Its not possible divide this elements {a} , {b}", r.Line, r.Column, ErrorType.Semantic));
                     return null;
@@ -69,11 +69,11 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
             BinaryOperators["%"] = (l, r, context, colector) => {
                 var a = l.Eval(context, colector);
                 var b = r.Eval(context, colector);
-                if (a is int ia && b is int ib)
-                    return ia % ib;
-                else if (a is float fa && b is float fb)
-                    return fa % fb;
-                else
+                try
+                {
+                    return Convert.ToInt32(a) % Convert.ToInt32(b);
+                }
+                catch
                 {
                     colector.AddError(new Error($"Its not possible divide this elements {a} , {b}", r.Line, r.Column, ErrorType.Semantic));
                     return null;
@@ -83,22 +83,22 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
             {
                 var a = l.Eval(context, colector);
                 var b = r.Eval(context, colector);
-                if (a is int ia && b is int ib)
-                    return Math.Pow(ia, ib);
-                else if (a is float fa && b is float fb)
-                    return Math.Pow(fa, fb);
-                else
+                try
+                {
+                    return Math.Pow(Convert.ToInt32(a), Convert.ToInt32(b));
+                }catch
                 {
                     colector.AddError(new Error($"Its not possible power this elements {a} , {b}", r.Line, r.Column, ErrorType.Semantic));
                     return null;
                 }
             };
             BinaryOperators["||"] = (l, r, context, colector) => {
-                var a = l.Eval(context, colector);
-                var b = r.Eval(context, colector);
-                if (a is bool sa && b is bool sb)
-                    return sa || sb;
-                else
+                var a =l.Eval(context, colector);
+                var b =r.Eval(context, colector);
+                try
+                {
+                    return Convert.ToBoolean(a) || Convert.ToBoolean(b);
+                }catch
                 {
                     colector.AddError(new Error($"Any of this elements its not bool{a} , {b}", r.Line, r.Column, ErrorType.Semantic));
                     return null;
@@ -107,9 +107,11 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
             BinaryOperators["&&"] = (l, r, context, colector) => {
                 var a = l.Eval(context, colector);
                 var b = r.Eval(context, colector);
-                if (a is bool sa && b is bool sb)
-                    return sa && sb;
-                else
+                try
+                {
+                    return Convert.ToBoolean(a) && Convert.ToBoolean(b);
+                }
+                catch
                 {
                     colector.AddError(new Error($"Any of this elements its not bool {a} , {b}", r.Line, r.Column, ErrorType.Semantic));
                     return null;
@@ -118,15 +120,10 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
             BinaryOperators["=="] = (l, r, context, colector) => {
                 var a = l.Eval(context, colector);
                 var b = r.Eval(context, colector);
-                if (a is bool ba && b is bool bb)
-                    return ba == bb;
-                else if (a is string sa && b is string sb)
-                    return sa == sb;
-                else if (a is int ia && b is int ib)
-                    return ia == ib;
-                else if (a is float fa && b is float fb)
-                    return fa - fb < 0.00000001;
-                else
+                try
+                {
+                    return Convert.ToString(a) == Convert.ToString(b);
+                }catch
                 {
                     colector.AddError(new Error($"Its not possible Equal this elements {a} , {b}", r.Line, r.Column, ErrorType.Semantic));
                     return null;
@@ -135,69 +132,58 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
             BinaryOperators["<"] = (l, r, context, colector) => {
                 var a = l.Eval(context, colector);
                 var b = r.Eval(context, colector);
-                if (a is string sa && b is string sb)
-                    return sa.Length < sb.Length;
-                else if (a is int ia && b is int ib)
-                    return ia < ib;
-                else if (a is float fa && b is float fb)
-                    return fa <fb ;
-                else
+                try
                 {
-                    colector.AddError(new Error($"Its not possible Minus this elements {a} , {b}", r.Line, r.Column, ErrorType.Semantic));
-                    return null;
+                    return Convert.ToInt32(a) < Convert.ToInt32(b);
+                }
+                catch
+                {
+                    return Convert.ToString(a).Length < Convert.ToString(b).Length;
                 }
             };
             BinaryOperators[">"] = (l, r, context, colector) => {
                 var a = l.Eval(context, colector);
                 var b = r.Eval(context, colector);
-                if (a is string sa && b is string sb)
-                    return sa.Length > sb.Length;
-                else if (a is int ia && b is int ib)
-                    return ia > ib;
-                else if (a is float fa && b is float fb)
-                    return fa > fb;
-                else
+                try
                 {
-                    colector.AddError(new Error($"Its not possible Mayor this elements {a} , {b}", r.Line, r.Column, ErrorType.Semantic));
-                    return null;
+                    return Convert.ToInt32(a) > Convert.ToInt32(b);
+                }
+                catch
+                {
+                    return Convert.ToString(a).Length > Convert.ToString(b).Length;
                 }
             };
             BinaryOperators["<="] = (l, r, context, colector) => {
                 var a = l.Eval(context, colector);
                 var b = r.Eval(context, colector);
-                if (a is string sa && b is string sb)
-                    return sa.Length <= sb.Length;
-                else if (a is int ia && b is int ib)
-                    return ia <= ib;
-                else if (a is float fa && b is float fb)
-                    return fa <= fb;
-                else
+                try
                 {
-                    colector.AddError(new Error($"Its not possible Minus or equal this elements {a} , {b}", r.Line, r.Column, ErrorType.Semantic));
-                    return null;
+                    return Convert.ToInt32(a) <= Convert.ToInt32(b);
+                }
+                catch
+                {
+                    return Convert.ToString(a).Length <= Convert.ToString(b).Length;
                 }
             };
             BinaryOperators[">="] = (l, r, context, colector) => {
                 var a = l.Eval(context, colector);
                 var b = r.Eval(context, colector);
-                if (a is string sa && b is string sb)
-                    return sa.Length >= sb.Length;
-                else if (a is int ia && b is int ib)
-                    return ia >= ib;
-                else if (a is float fa && b is float fb)
-                    return fa >= fb;
-                else
+                try
                 {
-                    colector.AddError(new Error($"Its not possible Mayor or equal this elements {a} , {b}", r.Line, r.Column, ErrorType.Semantic));
-                    return null;
+                    return Convert.ToInt32(a) >= Convert.ToInt32(b);
+                }
+                catch
+                {
+                    return Convert.ToString(a).Length >= Convert.ToString(b).Length;
                 }
             };
             UnaryOperators["!"] = (target, context, colector) =>
             {
                 var a = target.Eval(context,colector);
-                if (a is bool sa)
-                    return !sa;
-                else
+                try
+                {
+                    return !Convert.ToBoolean(a);
+                }catch
                 {
                     colector.AddError(new Error($"Its not possible negate this elements {a}" , target.Line, target.Column, ErrorType.Semantic));
                     return null;
@@ -206,11 +192,10 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
             UnaryOperators["-"] = (target, context, colector) =>
             {
                 var a = target.Eval(context, colector);
-                if (a is int sa)
-                    return (-1)*sa;
-                else if (a is float fa)
-                    return (-1) * fa;
-                else
+                try
+                {
+                    return -1 * Convert.ToInt32(a);
+                }catch
                 {
                     colector.AddError(new Error($"Its not possible negative this elements {a}", target.Line, target.Column, ErrorType.Semantic));
                     return null;
@@ -219,6 +204,8 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
         }
         public IAST Build(IToken token,string endmarker)
         {
+            if (token.Type() == Tokentype.EOF)
+                return new AtomicAST(token.Lexeme(), token.Line(), token.Column(), token.Lexeme());
             var raw = token.Lexeme().Trim();
             string sym;
             try
@@ -232,11 +219,11 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Sintactic
                     Tokentype.EOL => "EOL",
                     Tokentype.Keyword => raw,
                     Tokentype.Symbol => raw,
-                    Tokentype.Operator => raw
+                    Tokentype.Operator => raw,
                 };
             }catch
             {
-                return new GarbageAST(token.Lexeme(), token.Line(), token.Column(), token);
+                return new GarbageAST("GARBAGE", token.Line(), token.Column(), token.Lexeme());
             }
             return new AtomicAST(
                 sym,

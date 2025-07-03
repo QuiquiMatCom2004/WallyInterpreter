@@ -11,30 +11,35 @@
         Orange = 6,
         Purple = 7,
     }
-    public static class CanvasBuff
+    public class CanvasBuff
     {
-        public static event Action? OnChanged;
+        public event Action? OnChanged;
 
-        public static int Rows { get; private set; } = 20;
-        public static int Cols { get; private set; } = 20;
-        public static Colors[,] Matrix { get; private set; }
-            = new Colors[Rows, Cols];
+        public int Rows { get; private set; } = 20;
+        public int Cols { get; private set; } = 20;
+        public Colors[,] Matrix { get; private set; }
+        public CanvasBuff(int Size)
+        {
+            Rows = Size;
+            Cols = Size;
+            Matrix = new Colors[Size,Size];
+        }
 
-        public static void SetCell(int x, int y, Colors c)
+        public void SetCell(int x, int y, Colors c)
         {
             if (x < 0 || x >= Cols || y < 0 || y >= Rows) return;
             Matrix[y, x] = c;
             OnChanged?.Invoke();
         }
 
-        public static void Clear()
+        public void Clear()
         {
             for (var y = 0; y < Rows; y++)
                 for (var x = 0; x < Cols; x++)
                     Matrix[y, x] = Colors.Transparent;
             OnChanged?.Invoke();
         }
-        public static void Resize(int n)
+        public void Resize(int n)
         {
             Rows = n;
             Cols = n;

@@ -13,11 +13,11 @@ namespace WallyInterpreter.Components.Interpreter.Semantic
     public class GoToAST : AbstractAST
     {
         IAST condition;
-        string _label;
-        public GoToAST(IAST label, IAST condition,int line, int column) : base(label.Symbol, line, column)
+        IAST _label;
+        public GoToAST(string symbol,IAST label, IAST condition,int line, int column) : base(symbol, line, column)
         {
             this.condition = condition;
-            _label =label.Symbol;
+            _label =label;
         }
 
         public override object Eval(IContext context, IErrorColector colector)
@@ -26,7 +26,7 @@ namespace WallyInterpreter.Components.Interpreter.Semantic
             var c = condition.Eval(context, colector);
             if(c is bool b && b)
             {
-                return new GotoSignal(_label);
+                return new GotoSignal((string)_label.Eval(context,colector));
             }
             return null;
         }

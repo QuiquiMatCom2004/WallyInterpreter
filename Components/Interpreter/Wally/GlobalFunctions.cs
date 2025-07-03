@@ -1,5 +1,7 @@
-﻿using System.Net.Http.Headers;
+﻿using BlazorMonaco.Languages;
 using Microsoft.AspNetCore.DataProtection.KeyManagement.Internal;
+using System.Drawing;
+using System.Net.Http.Headers;
 using WallyInterpreter.Components.Draw;
 
 namespace WallyInterpreter.Components.Interpreter.Wally
@@ -25,29 +27,42 @@ namespace WallyInterpreter.Components.Interpreter.Wally
         };
         Colors actualColor = Colors.Transparent;
         int actualSizeBrush = 1;
-        private void Draw(int x, int y)
+        private void Draw(int x, int y,CanvasBuff canvas)
         {
             for (int i = x - (actualSizeBrush - 1) / 2; i < x + actualSizeBrush; i++) 
             {
                 for (int j = y - (actualSizeBrush - 1) / 2; j < y + actualSizeBrush; j++) 
                 {
-                    CanvasBuff.SetCell(j,i , actualColor);
+                    canvas.SetCell(j,i , actualColor);
                 }
             }
         }
-        public void Spawn(int x,int y)
+        public void Spawn(List<object> param)
         {
-            if (x < 0 || CanvasBuff.Rows < x || y < 0 || CanvasBuff.Cols < y) {
+            if (param.Count() != 3) throw new ArgumentException();
+            int x = Convert.ToInt32(param[0]);
+            int y = Convert.ToInt32(param[1]);
+            CanvasBuff canvas = (CanvasBuff)param[2];
+            if (x < 0 || canvas.Rows < x || y < 0 || canvas.Cols < y) {
                 throw new IndexOutOfRangeException();
             }
             wallyStruct.X = x; wallyStruct.Y = y;
         }
-        public void Color(string color)
+        public void Color(List<object> param)
         {
+            if (param.Count() != 2) throw new ArgumentException();
+            string color = Convert.ToString(param[0]);
+            color = RemoveDoubleQuote(color);
             actualColor = colorTranslation[color];
         }
-        public void Size(int x)
+        private string RemoveDoubleQuote(string s)
         {
+            return s.Substring(1, s.Length - 2);
+        }
+        public void Size(List<object> param)
+        {
+            if(param.Count() != 2)throw new ArgumentException();
+            int x = Convert.ToInt32(param[0]);
             if (x <= 0)
             {
                 actualSizeBrush = 1;
@@ -61,47 +76,87 @@ namespace WallyInterpreter.Components.Interpreter.Wally
                 actualSizeBrush = x;
             }
         }
-        public void DrawLine(int x, int y, int dist) 
+        public void DrawLine(List<object> param) 
         {
-            if (CanvasBuff.Rows - wallyStruct.X < dist || CanvasBuff.Cols - wallyStruct.Y < dist) {
-                throw new IndexOutOfRangeException();
-            }
+            if(param.Count() != 4) throw new ArgumentException();
+            int x = Convert.ToInt32( param[0]);
+            int y = Convert.ToInt32(param[1]);
+            int dist = Convert.ToInt32(param[2]);
+            CanvasBuff canvas = (CanvasBuff)param[3];
             if (Math.Abs(x) > 1 || Math.Abs(y) > 1) return;
+            if (x == 1 && canvas.Rows - wallyStruct.X < dist ||x ==-1 &&wallyStruct.X < dist || y == 1 && canvas.Cols - wallyStruct.Y < dist || y ==-1 && wallyStruct.Y < dist)
+                throw new IndexOutOfRangeException();
             while (dist > 0) {
-                Draw(wallyStruct.X, wallyStruct.Y);
+                Draw(wallyStruct.X, wallyStruct.Y,canvas);
                 wallyStruct.X += x;
                 wallyStruct.Y += y;
                 dist--;
             }
         }
-        public void DrawCircle(int x, int y, int radius) 
+        public void DrawCircle(List<object> param)
         {
-            if (wallyStruct.X + x > CanvasBuff.Rows || wallyStruct.Y + y > CanvasBuff.Cols || wallyStruct.Y + y < 0 || wallyStruct.X + x < 0)
+            if(param.Count() != 4) throw new ArgumentException();
+            int x = Convert.ToInt32(param[0]);
+            int y = Convert.ToInt32(param[1]);
+            int radius = Convert.ToInt32(param[2]);
+            CanvasBuff canvas = (CanvasBuff)param[3];
+            if (wallyStruct.X + x > canvas.Rows && x > 0 || wallyStruct.Y + y > canvas.Cols && y>0|| wallyStruct.Y + y < 0  && y < 0|| wallyStruct.X + x < 0 && x < 0)
                 throw new IndexOutOfRangeException();
             wallyStruct.X += x;
             wallyStruct.Y += y;
-            x = wallyStruct.X;
-            y = wallyStruct.Y;
-            if (x - radius < 0 || x + radius > CanvasBuff.Rows || y - radius < 0 || y + radius > CanvasBuff.Rows)
-                throw new IndexOutOfRangeException();
-            for(int i = y - radius; i < y + radius; i++)
+            var cx = wallyStruct.X;
+            var cy = wallyStruct.Y;
+            var d = 3 - 2 * radius;
+            x = 0;
+            y = radius;
+            while(y >= x)
             {
-                int pto0 = (int)Math.Round( Math.Pow(Math.Pow(radius,2) + Math.Pow(y-radius,2),0.5));
-                for(int j = x - radius; j < x + radius; j++)
+                Plot8(canvas, cx, cy, x,y);
+                if(d < 0)
                 {
-                    if(!(x < radius - pto0 || x > radius + pto0))
-                    {
-                        Draw(x, y);
-                    }
+                    d += 4 * x + 6;
                 }
+                else
+                {
+                    d += 4 * (x - y) + 10;
+                    y--;
+                }
+                x++;
             }
+            
         }
-        public void DrawRectangle(int dirX, int dirY, int dist,int with, int heigth)
+        private void Plot8(CanvasBuff canvas, int cx,int cy, int x,int y)
         {
+            if(cx+x >=0 &&cx+x < canvas.Rows && cy + y >=0 && cy + y < canvas.Cols)
+                Draw(cx+x, cy+y, canvas);
+            if (cx - x >= 0 && cx - x < canvas.Rows && cy + y >= 0 && cy + y < canvas.Cols)
+                Draw(cx - x, cy + y, canvas);
+            if (cx + x >= 0 && cx + x < canvas.Rows && cy - y >= 0 && cy - y < canvas.Cols)
+                Draw(cx + x, cy - y, canvas);
+            if (cx - x >= 0 && cx - x < canvas.Rows && cy - y >= 0 && cy - y < canvas.Cols)
+                Draw(cx - x, cy - y, canvas);
+            if (cx + y >= 0 && cx + y < canvas.Rows && cy + x >= 0 && cy + x < canvas.Cols)
+                Draw(cx + y, cy + x, canvas);
+            if (cx - y >= 0 && cx - y < canvas.Rows && cy + x >= 0 && cy + x < canvas.Cols)
+                Draw(cx - y, cy + x, canvas);
+            if (cx + y >= 0 && cx + y < canvas.Rows && cy - x >= 0 && cy - x < canvas.Cols)
+                Draw(cx + y, cy - x, canvas);
+            if (cx - y >= 0 && cx - y < canvas.Rows && cy - x >= 0 && cy - x < canvas.Cols)
+                Draw(cx - y, cy - x, canvas);
+        }
+        public void DrawRectangle(List<object> param)
+        {
+            if (param.Count() != 6) throw new ArgumentException();
+            int dirX = Convert.ToInt32(param[0]);
+            int dirY = Convert.ToInt32(param[1]);
+            int dist = Convert.ToInt32(param[2]);
+            int with = Convert.ToInt32(param[3]);
+            int heigth = Convert.ToInt32(param[4]);
+            CanvasBuff canvas = (CanvasBuff)param[5];
             if (Math.Abs(dirX) > 1 || Math.Abs(dirY) > 1) return;
             while (dist > 0) {
-                if (wallyStruct.X + dirX > CanvasBuff.Rows || wallyStruct.Y + dirY > CanvasBuff.Cols || wallyStruct.Y + dirY < 0 || wallyStruct.X + dirX < 0)
-                    throw new IndexOutOfRangeException( );
+                if (wallyStruct.X + dirX > canvas.Rows || wallyStruct.Y + dirY > canvas.Cols || wallyStruct.Y + dirY < 0 || wallyStruct.X + dirX < 0)
+                    throw new IndexOutOfRangeException();
                 wallyStruct.X += dirX;
                 wallyStruct.Y += dirY;
                 dist--;
@@ -110,111 +165,135 @@ namespace WallyInterpreter.Components.Interpreter.Wally
             var y = wallyStruct.Y;
             wallyStruct.X -= heigth / 2;
             wallyStruct.Y -= with / 2;
-            DrawLine(1, 0, heigth);
+            DrawLine(new List<object>(){1, 0, heigth, canvas});
+            
+            DrawLine(new List<object>() { 0, 1, with, canvas });
 
-            wallyStruct.X = x;
-            wallyStruct.Y = y;
-            wallyStruct.X += heigth / 2;
-            wallyStruct.Y += with / 2;
-            DrawLine(-1, 0, heigth);
+            DrawLine(new List<object>() { -1, 0, heigth, canvas });
 
-            wallyStruct.X = x;
-            wallyStruct.Y = y;
-            wallyStruct.X += heigth / 2;
-            wallyStruct.Y += with / 2;
-            DrawLine(-1, 0, with);
-
-            wallyStruct.X = x;
-            wallyStruct.Y = y;
-            wallyStruct.X -= heigth / 2;
-            wallyStruct.Y -= with / 2;
-            DrawLine(1, 0, with);
+            DrawLine(new List<object>() { 0, -1, with, canvas });
 
             wallyStruct.X = x;
             wallyStruct.Y = y;
         }
-        public void Fill()
+        public void Fill(List<object> param)
         {
+            if(param.Count() != 1)throw new ArgumentException();
+            CanvasBuff canvas = (CanvasBuff)param[0];
             Queue<(int,int)> cola = new Queue<(int, int)> ();
             cola.Enqueue((wallyStruct.X, wallyStruct.Y));
-            Colors color = CanvasBuff.Matrix[wallyStruct.Y,wallyStruct.X];
+            Colors color = canvas.Matrix[wallyStruct.Y,wallyStruct.X];
             while (cola.Count > 0) {
                 var pos = cola.Dequeue ();
-                CheckAdyacentsColors(pos.Item2, pos.Item1, cola, color);
-                CanvasBuff.SetCell(pos.Item1, pos.Item2, actualColor);
+                CheckAdyacentsColors(pos.Item2, pos.Item1, cola, color,canvas);
+                canvas.SetCell(pos.Item1, pos.Item2, actualColor);
             }
         }
-        private void CheckAdyacentsColors(int x, int y, Queue<(int,int)> cola, Colors color)
+        private void CheckAdyacentsColors(int x, int y, Queue<(int,int)> cola, Colors color,CanvasBuff canvas)
         { 
-            if (CanvasBuff.Matrix[x-1,y] == color)
+            if (IsInMatrix(x - 1, y, canvas) && !cola.Any(item => item.Item1 == x-1 && item.Item2 == y) && canvas.Matrix[x-1,y] == color)
             {
-                cola.Enqueue((x, y));
+                cola.Enqueue((x-1, y));
             }
-            if (CanvasBuff.Matrix[x +1, y] == color)
+            if (IsInMatrix(x + 1, y, canvas) && !cola.Any(item => item.Item1 == x + 1 && item.Item2 == y) && canvas.Matrix[x +1, y] == color)
             {
-                cola.Enqueue((x, y));
+                cola.Enqueue((x+1, y));
             }
-            if (CanvasBuff.Matrix[x - 1, y-1] == color)
+           /* if (IsInMatrix(x - 1, y-1, canvas) && !cola.Any(item => item.Item1 == x - 1 && item.Item2 == y-1) && canvas.Matrix[x - 1, y-1] == color)
             {
-                cola.Enqueue((x, y));
+                cola.Enqueue((x-1, y-1));
+            }*/
+           /* if (IsInMatrix(x-1,y+1,canvas) && !cola.Any(item => item.Item1 == x - 1 && item.Item2 == y+1) && canvas.Matrix[x - 1, y + 1] == color)
+            {
+                cola.Enqueue((x - 1, y+1));
+            }*/
+           /* if (IsInMatrix(x + 1,y-1,canvas) && !cola.Any(item => item.Item1 == x + 1 && item.Item2 == y-1) && canvas.Matrix[x +1, y -1] == color)
+            {
+                cola.Enqueue((x+1, y - 1));
             }
-            if (CanvasBuff.Matrix[x - 1, y + 1] == color)
+            if (IsInMatrix(x + 1,y + 1,canvas) && !cola.Any(item => item.Item1 == x + 1 && item.Item2 == y+1) && canvas.Matrix[x + 1, y + 1] == color)
             {
-                cola.Enqueue((x, y));
+                cola.Enqueue((x+1, y+1));
+            }*/
+            if (IsInMatrix(x,y - 1,canvas) && !cola.Any(item => item.Item1 == x && item.Item2 == y-1) && canvas.Matrix[x, y -1] == color)
+            {
+                cola.Enqueue((x, y - 1));
             }
-            if (CanvasBuff.Matrix[x +1, y -1] == color)
+            if (IsInMatrix(x,y + 1,canvas) && !cola.Any(item => item.Item1 == x  && item.Item2 == y+1) &&  canvas.Matrix[x , y+1] == color)
             {
-                cola.Enqueue((x, y));
-            }
-            if (CanvasBuff.Matrix[x + 1, y + 1] == color)
-            {
-                cola.Enqueue((x, y));
-            }
-            if (CanvasBuff.Matrix[x, y -1] == color)
-            {
-                cola.Enqueue((x, y));
-            }
-            if (CanvasBuff.Matrix[x , y+1] == color)
-            {
-                cola.Enqueue((x, y));
+                cola.Enqueue((x, y+1));
             }
         }
-        public int GetActualX() 
+        private bool IsInMatrix(int x, int y, CanvasBuff canvas)
         {
+            if (x < 0 || x >= canvas.Rows || y < 0 || y >= canvas.Cols)
+            {
+                return false;
+            }
+            return true;
+        }
+        public int GetActualX(List<object> param) 
+        {
+            if(param.Count() != 1) throw new ArgumentException();
             return wallyStruct.X;
         }
-        public int GetActualY()
+        public int GetActualY(List<object> param)
         {
+            if (param.Count() != 1) throw new ArgumentException();
             return wallyStruct.Y;
         }
-        public int GetCanvasSize()
+        public int GetCanvasSize(List<object> param)
         {
-            return CanvasBuff.Cols;
+            if(param.Count() != 1) throw new ArgumentException();
+            CanvasBuff canvas = (CanvasBuff)param[0];
+            return canvas.Cols;
         }
-        public int GetColorCount(string color,int x1,int y1,int x2, int y2)
+        public int GetColorCount(List<object> param)
         {
+            if (param.Count() != 6) throw new ArgumentException();
+            string color = Convert.ToString(param[0]);
+            color = RemoveDoubleQuote(color);
+            int x1 = Convert.ToInt32(param[1]);
+            int y1 = Convert.ToInt32(param[2]);
+            int x2 = Convert.ToInt32(param[3]);
+            int y2 = Convert.ToInt32(param[4]);
+            CanvasBuff canvas = (CanvasBuff)param[5];
             Colors c = colorTranslation[color];
             int result = 0;
+            if (x1 >= canvas.Rows || x2 >= canvas.Rows || x1 < 0 || x2 < 0 || y1 >= canvas.Cols || y2 >= canvas.Cols || y1 < 0 || y2 < 0)
+                return 0;
             for (int i = x1; i <= x2; i++) {
                 for (int j = y1; j <= y2; j++) { 
-                    if(CanvasBuff.Matrix[j,i] == c) { result++; }
+                    if(canvas.Matrix[j,i] == c) { result++; }
                 }
             }
             return result;
         }
-        public bool IsBrushColor(string color)
+        public bool IsBrushColor(List<object> param)
         {
+            if(param.Count() != 2) throw new ArgumentException();
+            string color = Convert.ToString(param[0]);
+            color = RemoveDoubleQuote(color);
+            CanvasBuff canvas = (CanvasBuff)param[1];
             Colors c = colorTranslation[color];
             return c == actualColor;
         }
-        public bool IsBrushSize(int Size)
+        public bool IsBrushSize(List<object> param)
         {
+            if (param.Count() != 2) throw new ArgumentException();
+            int Size = Convert.ToInt32(param[0]);
             return Size == actualSizeBrush;
         }
-        public bool IsCanvasColor(string color,int vertical,int  horizontal)
+        public bool IsCanvasColor(List<object> param)
         {
+            if(param.Count() != 4) throw new ArgumentException();
+            string color = Convert.ToString(param[0]);
+            color = RemoveDoubleQuote(color);
+            int vertical = Convert.ToInt32(param[1]);
+            int horizontal = Convert.ToInt32(param[2]);
+            CanvasBuff canvas = (CanvasBuff)param[3];
             Colors c = colorTranslation[color];
-            return CanvasBuff.Matrix[wallyStruct.Y + vertical,wallyStruct.X + horizontal] == c;
+            return canvas.Matrix[wallyStruct.Y + vertical,wallyStruct.X + horizontal] == c;
         }
     }
 }

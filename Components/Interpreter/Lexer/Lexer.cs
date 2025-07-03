@@ -74,15 +74,15 @@ namespace WallyInterpreter.Components.Interpreter.Lexer
             List<Tokentype> lastTokentypes = new List<Tokentype>();
             do
             {
+                walked = false;
                 List<Tokentype> posibleTokentype = new List<Tokentype>();
                 foreach(var aut in _automaton)
                 {
                     try
                     {
                         aut.Key.Walk(_code[_textPointer]);
-                        walked = true;
-                        if (aut.Key.CurrentState().IsFault())
-                            walked = false;
+                        if (!aut.Key.CurrentState().IsFault())
+                            walked = true;
                     }catch { walked = false; }
                     if (walked && aut.Key.CurrentState().IsAccepting())
                         posibleTokentype.Add(aut.Value);
@@ -104,9 +104,9 @@ namespace WallyInterpreter.Components.Interpreter.Lexer
                         else
                         {
                             _column++;
+                            walked = true;
                         }
                         _code = _code.Substring(1);
-                        walked = true;
                     }
                     else
                     {
@@ -128,10 +128,6 @@ namespace WallyInterpreter.Components.Interpreter.Lexer
                     lastTokentypes = posibleTokentype;
                     _textReaded += _code[_textPointer];
                     _textPointer++;
-                    if(_textPointer == _code.Length)
-                    {
-                        walked = false;
-                    }
                 }
 
             }

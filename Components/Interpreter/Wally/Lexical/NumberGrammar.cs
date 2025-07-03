@@ -65,9 +65,9 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Lexical
             Number.AddProduction(before_tail, new IGranmarSymbol[] { epsilon });
             Number.AddProduction(before_tail, new IGranmarSymbol[] { dot, after_tail });
 
-            Number.AddProduction(Numb, new IGranmarSymbol[] { d0, dot_notacion });
+           /* Number.AddProduction(Numb, new IGranmarSymbol[] { d0, dot_notacion });
             Number.AddProduction(SignedNumber, new IGranmarSymbol[] { d0, dot_notacion });
-            Number.AddProduction(dot_notacion, new IGranmarSymbol[] { dot, after_tail });
+            Number.AddProduction(dot_notacion, new IGranmarSymbol[] { dot, after_tail });*/
 
             Number.AddProduction(after_tail, new IGranmarSymbol[] { d0, after_tail });
             Number.AddProduction(after_tail, new IGranmarSymbol[] { d1, after_tail });

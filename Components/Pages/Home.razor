@@ -1,22 +1,40 @@
 ﻿@page "/"
 @rendermode InteractiveServer
-<StandaloneCodeEditor CssClass="my_editor" @ref = "editor" ConstructionOptions="EditorConstructionOptions"/> 
-
-<div>
-	<button style="text-align"  @onclick = "Compile">Compile</button>
-	<WallyInterpreter.Components.FileSystem.LoadButton Editor="editor" ></WallyInterpreter.Components.FileSystem.LoadButton>
-	<div>
-		<InputText @bind-Value = "FileName" />
-		<WallyInterpreter.Components.FileSystem.SaveButton editor="editor" FileName="@FileName" ></WallyInterpreter.Components.FileSystem.SaveButton>
+@inject IJSRuntime JS
+@inject WallyStateService state
+@inject NavigationManager nav
+@using Blazor.Extensions.Canvas.Canvas2D
+@using WallyInterpreter.Components.Draw
+<div class="split">
+	<div class="editor-panel">
+		<StandaloneCodeEditor CssClass="my_editor" @ref = "editor" ConstructionOptions="EditorConstructionOptions"/> 
+	</div>
+	<div class="canvas-panel" style="width:420px; height:420px">
+		<canvas id="wallyCanvas" style="background:#1e1e1e; image-rendering: pixelated; width:100%; height:100%;"></canvas>
+	</div>
+	<div class="controls">
+		<button style="text-align" @onclick="Compile">Compile</button>
+		<WallyInterpreter.Components.FileSystem.LoadButton OnLoaded="LoadSource"></WallyInterpreter.Components.FileSystem.LoadButton>
+		<div>
+			<InputText @bind-Value="FileName" />
+			<WallyInterpreter.Components.FileSystem.SaveButton editor="editor" FileName="@FileName"></WallyInterpreter.Components.FileSystem.SaveButton>
+		</div>
+		<div>
+			<input type="number" @bind="size" />
+			<button @onclick="Resize">Resize</button>
+		</div>
 	</div>
 </div>
+
+
 
 
 @code
 {
 	private StandaloneCodeEditor editor = null!;
+	private Interpreter.Wally.WallyInterpreter wally = new Interpreter.Wally.WallyInterpreter(20);
 	private string FileName = "miPrograma";
-	private WallyInterpreter.Components.Interpreter.Wally.WallyInterpreter wally = null!;
+	private int size { get; set; } = 20;
 	private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
 	{
 		return new StandaloneEditorConstructionOptions()
@@ -35,9 +53,9 @@
 				}
 			};
 	}
+
 	private async Task Compile()
 	{
-		wally = new Interpreter.Wally.WallyInterpreter();
 		try
 		{
 			var code = await editor.GetValue();
@@ -48,5 +66,60 @@
 		{
 			Console.WriteLine($"Compilacion fallida:{ex.Message} ");
 		}
+		finally
+		{
+			var mat = wally.canvas.Matrix;
+			state.SetMatrix(mat);
+			await Draw(mat);
+			//nav.NavigateTo("/canvas");
+		}
 	}
+	private void Resize()
+	{
+		Console.WriteLine("Resize {0}",size);
+		wally = new Interpreter.Wally.WallyInterpreter(size);
+		Colors[,] mat = new Colors[size, size];
+		for(int i =0;i < size;i++)
+		{
+			for(int j = 0; j < size; j++)
+			{
+				mat[i,j] = Colors.Transparent;
+			}
+		}
+		Draw(mat);
+	}
+	private async void LoadSource(string code)
+	{
+		await editor.SetValue(code);
+	}
+
+	private async Task Draw(Colors[,] mat)
+	{
+		var rows = mat.GetLength(0);
+		var cols = mat.GetLength(1);
+		var arr = new string[rows * cols];
+		for (int y = 0; y < rows; y++)
+			for (int x = 0; x < cols; x++)
+				arr[y * cols + x] = ColorToCSS(mat[y, x]);
+
+		await JS.InvokeVoidAsync("drawMatrixResponsive",
+								 "wallyCanvas",
+								 arr,
+								 rows,
+								 cols
+		);
+	}
+	private string ColorToCSS(Colors color) => color switch
+	{
+		Colors.Black => "#000000",
+		Colors.Transparent => "#FFFFFF",
+		Colors.Red => "#b32121",
+		Colors.Green => "#26b050",
+		Colors.Yellow => "#fffd37",
+		Colors.Blue => "#007bff",
+		Colors.Orange => "#b46e11",
+		Colors.Purple => "#800080",
+
+		_ => "#000000"
+	};
 }

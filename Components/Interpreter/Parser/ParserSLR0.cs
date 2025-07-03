@@ -30,6 +30,15 @@ namespace WallyInterpreter.Components.Interpreter.Parser
             ConstructActionTable(granmar);
             _stackStates = new Stack<int>();
             _stackStates.Push(_initialState);
+            string actions = "";
+            foreach(var st in _action.Keys)
+            {
+                foreach(var dir in _action[st])
+                {
+                    actions += $"I{st} --{dir.Key}--> {dir.Value} \n";
+                }
+            }
+            File.WriteAllText("ParsingActionTable.txt", actions);
         }
         private void ConstructActionTable(IGranmar gAugmented)
         {
@@ -130,6 +139,8 @@ namespace WallyInterpreter.Components.Interpreter.Parser
         public void Parse(IToken token, IErrorColector collector)
         {
             var ast = _astEngine(token, _endmarker.Symbol());
+            if (ast is GarbageAST)
+                return;
             bool reduced = true;
             while(reduced)
             {

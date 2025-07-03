@@ -1,4 +1,4 @@
-html, body {
+﻿html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
@@ -160,3 +160,29 @@ h1:focus {
         padding: 0 4px;
         border-radius: 2px;
     }
+.split{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows:1fr auto;
+    height: 100vh;
+}
+.controls {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem; /* espacio horizontal entre botones */
+    padding: 0.5rem; /* opcional: algo de margen interno */
+}
+.editor-panel {
+    border-right: 1px solid #ccc;
+    overflow: hidden;
+}
+
+.canvas-panel {
+    background: #1e1e1e;
+    position: relative;
+}
+
+canvas {
+    image-rendering: pixelated; /* evita anti‐aliasing */
+}

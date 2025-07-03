@@ -112,7 +112,7 @@ namespace WallyInterpreter.Components.Interpreter.Automaton
         /// <exception cref="NFA_AutomatonException">If you try move to the next node in a NFA automaton</exception>
         public void Walk(T symbol)
         {
-            if (_current.IsFault()) throw new FaultNodeException();
+            if (_current.IsFault()) return;
             if (!IsDeterministic())
                 throw new NFA_AutomatonException();
             _current = _current.Next(symbol);

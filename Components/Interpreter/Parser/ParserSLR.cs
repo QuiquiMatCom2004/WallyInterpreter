@@ -8,7 +8,7 @@ using WallyInterpreter.Components.Interpreter.Tokens;
 
 namespace WallyInterpreter.Components.Interpreter.Parser
 {
-    public class ParserSLR : IParserSLR
+   /* public class ParserSLR : IParserSLR
     {
         private List<IState<string>> _states = new List<IState<string>>();
         private IState<string> _startState;
@@ -240,4 +240,5 @@ namespace WallyInterpreter.Components.Interpreter.Parser
             _stack.Clear();
         }
     }
+*/
 }

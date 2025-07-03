@@ -10,9 +10,9 @@ namespace WallyInterpreter.Components.Interpreter.Wally.Lexical
             var tail = new GranmarSymbol("tail",false, GranmarSymbolType.NonTerminal);
             var double_quotes = new GranmarSymbol("\"",false,GranmarSymbolType.Terminal);
             List<GranmarSymbol> symbols = new List<GranmarSymbol>();
-            for(int i = 32; i <= 126; i++)
+            for (int i = 32; i <= 126; i++)
             {
-                symbols.Add(new GranmarSymbol(((char)i).ToString(), false,GranmarSymbolType.Terminal));
+                symbols.Add(new GranmarSymbol(((char)i).ToString(), false, GranmarSymbolType.Terminal));
             }
             StringGranmar = new Granmar.Granmar(startSymbol);
             StringGranmar.AddProduction(startSymbol, new IGranmarSymbol[] { double_quotes, tail });

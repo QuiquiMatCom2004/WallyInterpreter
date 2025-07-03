@@ -21,7 +21,7 @@ namespace WallyInterpreter.Components.Interpreter.Interpreter
         public void Execute(string code)
         {
            _lexer.LoadCode(code);
-
+            _parser.Reset();
             while (_lexer.Next())
             {
                 var err = _lexicalAnalizer.CheckRule(_lexer.Current());
@@ -31,19 +31,31 @@ namespace WallyInterpreter.Components.Interpreter.Interpreter
                 Draw.Information.tokens.Add(_lexer.Current());
                 _parser.Parse(_lexer.Current(), _errorColector);
             }
+            _parser.Parse(new Token(0, 0, "\n", Tokentype.EOL),_errorColector);
+            _parser.Parse(new Token(_lexer.Current().Line()+1,0,_parser.EndMarker(),Tokentype.EOF),_errorColector);
             var codeResult = _parser.GetAST().Eval(_context, _errorColector);
             _parser.Reset();
+            int garbageTokens = 0;
             foreach(var err in _errorColector.GetErrors())
             {
+                if(err.Message == "GarbageToken \r")
+                {
+                    garbageTokens++;
+                    continue;
+                }
                 Draw.Information.errors.Add(err);  
             }
-            if (_errorColector.GetErrors().Length == 0)
+            if (_errorColector.GetErrors().Length == garbageTokens)
             {
                 ConfigurationLog configurationLog = new ConfigurationLog();
                 configurationLog.LogInformation($"Codigo Interpretado con exito {codeResult}");
             }
             else
             {
+                foreach (var erros in _errorColector.GetErrors())
+                {
+                    Console.WriteLine(erros.Message);
+                }
                 throw new Exception("Interpretacion Process Failure");
             }
         }

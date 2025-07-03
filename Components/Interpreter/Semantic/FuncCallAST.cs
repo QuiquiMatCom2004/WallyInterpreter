@@ -1,22 +1,31 @@
-﻿using WallyInterpreter.Components.Interpreter.Errors;
+﻿using WallyInterpreter.Components.Draw;
+using WallyInterpreter.Components.Interpreter.Errors;
 
 namespace WallyInterpreter.Components.Interpreter.Semantic
 {
     public class FuncCallAST : AbstractAST
     {
         List<IAST> args;
-        public FuncCallAST(string Name, int line, int column, IAST[] args) : base(Name, line, column)
+        IAST Name;
+        public FuncCallAST(string symbol, int line, int column, IAST Name,IAST[] args) : base(symbol, line, column)
         {
             this.args = args.ToList();
+            this.Name = Name;
         }
 
         public override object Eval(IContext context, IErrorColector colector)
         {
             Draw.Information.asts.Add(this);
-            var f = context.GetFuncion(Symbol);
+            var f = context.GetFuncion((string)Name.Eval(context,colector));
             try
             {
-                var result = f.DynamicInvoke(args);
+                List<object> _params = new List<object>();
+                foreach(var p in args)
+                {
+                    _params.Add(p.Eval(context,colector));
+                }
+                _params.Add(context.GetVariables("Canvas"));
+                var result = f.DynamicInvoke(_params);
                 return result;
             }
             catch (Exception ex) {

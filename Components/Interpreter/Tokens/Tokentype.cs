@@ -10,6 +10,7 @@
         Number,
         Boolean,
         String,
-        EOL
+        EOL,
+        EOF
     }
 }

@@ -14,8 +14,8 @@ namespace WallyInterpreter.Components.Interpreter.Parser
     public interface IParserSLR:IParser
     {
         string StartState();
-        Dictionary<string, Dictionary<string, ActionStruct>> ActionTable();
-        Dictionary<string, Dictionary<string, ReduceStruct>> ReduceTable();
+        Dictionary<int, Dictionary<string, ActionStruct>> ActionTable();
+        Dictionary<int, Dictionary<string, ReduceStruct>> ReduceTable();
 
         void Reset();
     }

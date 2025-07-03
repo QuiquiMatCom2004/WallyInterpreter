@@ -55,21 +55,27 @@ namespace WallyInterpreter.Components.Interpreter.Granmar
             _productions[symbol.Symbol()].Add(symbols.ToList());
         }
 
-        public IGranmarSymbol[] First(IGranmarSymbol[] symbol)
+        public IGranmarSymbol[] First(IGranmarSymbol[] symbols)
         {
-            bool epsilon = symbol.Length > 0;
+            var result = new HashSet<IGranmarSymbol>();
+            bool derivesEpsilon = true;
             int pos = 0;
-            var result = new List<IGranmarSymbol>();
-            while (pos < symbol.Length && epsilon) {
-                foreach (var s in _first[symbol[pos].Symbol()]) { 
-                    if(result.Contains(s) && !s.Epsilon())
+
+            while (pos < symbols.Length && derivesEpsilon)
+            {
+                foreach (var s in _first[symbols[pos].Symbol()])
+                {
+                    if (!s.Epsilon())
                         result.Add(s);
                 }
-                epsilon = DeriveInEpsilon(symbol[pos]);
+                derivesEpsilon = DeriveInEpsilon(symbols[pos]);
                 pos++;
             }
-            if (epsilon) {
-                result.Add(_terminals.First(s => s.Epsilon()));
+            if (derivesEpsilon)
+            {
+                var epsilonSymbol = _terminals.FirstOrDefault(s => s.Epsilon());
+                if (epsilonSymbol != null)
+                    result.Add(epsilonSymbol);
             }
             return result.ToArray();
         }
@@ -126,17 +132,17 @@ namespace WallyInterpreter.Components.Interpreter.Granmar
             do
             {
                 change = false;
-                foreach(var symbol in _nonTerminals)
+                foreach (var symbol in _nonTerminals)
                 {
-                    foreach(var prod in _productions[symbol.Symbol()])
+                    foreach (var prod in _productions[symbol.Symbol()])
                     {
                         bool epsilon = true;
                         int pos = 0;
-                        while(epsilon && pos < prod.Count())
+                        while (epsilon && pos < prod.Count())
                         {
-                            foreach(var sym in _first[prod[pos].Symbol()])
+                            foreach (var sym in _first[prod[pos].Symbol()])
                             {
-                                if (_first[symbol.Symbol()].Contains(sym) && !sym.Epsilon())
+                                if (!_first[symbol.Symbol()].Contains(sym) && !sym.Epsilon())
                                 {
                                     _first[symbol.Symbol()].Add(sym);
                                     change = true;
@@ -145,57 +151,88 @@ namespace WallyInterpreter.Components.Interpreter.Granmar
                             epsilon = DeriveInEpsilon(prod[pos]);
                             pos++;
                         }
-                        if(epsilon)
+                        if (epsilon && pos == prod.Count)
                         {
-                            _first[symbol.Symbol()].Add(_terminals.First(s => s.Epsilon()));
-                            change = true;
+                            if (!_first[symbol.Symbol()].Any(s => s.Epsilon()))
+                            {
+                                _first[symbol.Symbol()].Add(_terminals.First(s => s.Epsilon()));
+                                change = true;
+                            }
                         }
+                        if (DeriveInEpsilon(symbol))
+                        {
+                            if (!_first[symbol.Symbol()].Any(s => s.Epsilon()))
+                            {
+                                _first[symbol.Symbol()].Add(_terminals.First(s => s.Epsilon()));
+                                change = true;
+                            }
+                        }
+                        if (change)
+                            break;
                     }
-                    if (change)
-                        break;
                 }
             }
             while (change);
         }
+
         private void MakeFollow(IGranmarSymbol endmarker)
         {
             InitFollowSets(endmarker);
-            bool change;
+
+            bool changed;
             do
             {
-                change = false;
-                foreach ( var  symbol in _nonTerminals)
+                changed = false;
+
+                foreach (var head in _nonTerminals)
                 {
-                    if (MakeFollowFor(symbol))
-                        change = true;
+                    foreach (var production in _productions[head.Symbol()])
+                    {
+                        for (int i = 0; i < production.Count; i++)
+                        {
+                            var B = production[i];
+                            if (B.Type() != GranmarSymbolType.NonTerminal)
+                                continue;
+                            var beta = production.Skip(i + 1).ToArray();
+
+                            // Regla 2
+                            var firstBeta = First(beta);
+                            foreach (var sym in firstBeta)
+                            {
+                                if (!sym.Epsilon() && !_follow[B.Symbol()].Contains(sym))
+                                {
+                                    _follow[B.Symbol()].Add(sym);
+                                    changed = true;
+                                }
+                            }
+
+                            // Regla 3
+                            bool betaDerivesEpsilon = beta.Length == 0 || firstBeta.Any(s => s.Epsilon());
+                            if (betaDerivesEpsilon)
+                            {
+                                foreach (var sym in _follow[head.Symbol()])
+                                {
+                                    if (!_follow[B.Symbol()].Contains(sym))
+                                    {
+                                        _follow[B.Symbol()].Add(sym);
+                                        changed = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-            }
-            while (change);
+            } while (changed);
         }
         private void InitFirstSets()
         {
-            List<IGranmarSymbol> symbols = new List<IGranmarSymbol>();
-            foreach(var terminal in _terminals)
+            foreach (var terminal in _terminals)
             {
-                symbols.Add(terminal);
+                _first[terminal.Symbol()] = new List<IGranmarSymbol>() { terminal };
             }
-            foreach(var nonterminals in _nonTerminals)
+            foreach (var nonterminals in _nonTerminals)
             {
-                symbols.Add(nonterminals);
-            }
-            foreach(var symbol in symbols)
-            {
-                if(symbol.Type() == GranmarSymbolType.Terminal)
-                {
-                    _first.Add(symbol.Symbol(), new List<IGranmarSymbol> { symbol });
-                    continue;
-                }
-                if(symbol.Type() == GranmarSymbolType.NonTerminal && DeriveInEpsilon(symbol))
-                {
-                    _first.Add(symbol.Symbol(),new() { _terminals.First(s => s.Epsilon()) });
-                    continue;
-                }
-                _first[symbol.Symbol()] = new List<IGranmarSymbol>();
+                _first[nonterminals.Symbol()] = new List<IGranmarSymbol>();
             }
         }
         private void InitFollowSets(IGranmarSymbol endmarker)
@@ -205,40 +242,6 @@ namespace WallyInterpreter.Components.Interpreter.Granmar
                 _follow[symbol.Symbol()] = new List<IGranmarSymbol>();
             }
             _follow[StartSymbol().Symbol()].Add(endmarker);
-        }
-        private bool MakeFollowFor(IGranmarSymbol endmarker)
-        {
-            bool result = false;
-            foreach(var nonTerminal in _nonTerminals)
-            {
-                if (!_productions.ContainsKey(nonTerminal.Symbol())) continue;
-                foreach (var prod in _productions[nonTerminal.Symbol()]) {
-                    int index = prod.FindIndex(s => s.Symbol() == endmarker.Symbol());
-                    if (index != -1) {
-                        List<IGranmarSymbol> first = First(prod.Skip(index+1).ToArray()).ToList();
-                        bool epsilon = first.Any(s => s.Epsilon());
-                        if (prod.Count()-1 == index ||epsilon) {
-                            foreach (var syms in _follow[nonTerminal.Symbol()]) {
-                                if (!_follow[endmarker.Symbol()].Any(s => s.Symbol() == syms.Symbol())&& !syms.Epsilon())
-                                {
-                                    _follow[endmarker.Symbol()].Add(syms);
-                                    result = true;
-                                }
-                            }
-                        }
-                        foreach(var syms in first)
-                        {
-                            if (!_follow[endmarker.Symbol()].Any(s => s.Symbol() == syms.Symbol()) && !syms.Epsilon())
-                            {
-                                _follow[endmarker.Symbol()].Add(syms);
-                                result = true;
-                            }
-                        }
-                    }
-                }
-            }
-
-            return result;
         }
         public override string ToString()
         {

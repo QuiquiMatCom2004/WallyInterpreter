@@ -6,10 +6,10 @@ namespace WallyInterpreter.Components.Interpreter.Semantic
     {
         private Func<IAST, IContext, IErrorColector, object> _operator;
         IAST target;
-        public UnaryAST(string symbol, int line, int column,Func<IAST,IContext,IErrorColector,object> op, IAST target ) : base(symbol, line, column)
+        public UnaryAST(string symbol, int line, int column, Func<IAST, IContext, IErrorColector, object> op, IAST target) : base(symbol, line, column)
         {
             _operator = op;
-            this.target = target ;
+            this.target = target;
         }
 
         public override object Eval(IContext context, IErrorColector colector)

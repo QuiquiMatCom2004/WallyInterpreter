@@ -4,11 +4,13 @@ namespace WallyInterpreter.Components.Interpreter.Semantic
 {
     public class LabelAST : AbstractAST
     {
-        public LabelAST(string symbol, int line, int column) : base(symbol, line, column)
+        private IAST _label;
+        public LabelAST(string symbol, int line, int column, IAST label) : base(symbol, line, column)
         {
+            _label = label;
         }
 
-        public override object Eval(IContext context, IErrorColector colector){Draw.Information.asts.Add(this); return null; }
-        
+        public override object Eval(IContext context, IErrorColector colector) { Draw.Information.asts.Add(this); return _label.Eval(context,colector); }
+
     }
 }

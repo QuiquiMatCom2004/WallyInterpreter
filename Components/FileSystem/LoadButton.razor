@@ -7,7 +7,7 @@
 </label>
 
 @code {
-    [Parameter] public StandaloneCodeEditor Editor { get; set; } = null!;
+    [Parameter] public EventCallback<string> OnLoaded{ get; set; }
     [Parameter] public long MaxFileSize { get; set; } = 1024 * 1024; // 1 MB
 
     private async Task LoadPw(InputFileChangeEventArgs e)
@@ -17,7 +17,6 @@
         using var reader = new StreamReader(stream);
         var text = await reader.ReadToEndAsync();
 
-        // Pone el contenido en el editor
-        await Editor.SetValue(text);
+        await OnLoaded.InvokeAsync(text);
     }
 }

@@ -1,0 +1,2 @@
+Construccion del parser SLR0 253, escribir 276
+First y follow 244

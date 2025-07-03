@@ -1,4 +1,6 @@
-﻿using WallyInterpreter.Components.Interpreter.Errors;
+﻿using System.Reflection.Metadata.Ecma335;
+using WallyInterpreter.Components.Draw;
+using WallyInterpreter.Components.Interpreter.Errors;
 using WallyInterpreter.Components.Interpreter.Granmar;
 using WallyInterpreter.Components.Interpreter.Interpreter;
 using WallyInterpreter.Components.Interpreter.LexicalAnalizer;
@@ -12,7 +14,8 @@ namespace WallyInterpreter.Components.Interpreter.Wally
     public class WallyInterpreter : IInterpreter
     {
         private IInterpreter interpreter;
-        public WallyInterpreter() 
+        public CanvasBuff canvas;
+        public WallyInterpreter(int CanvasSize) 
         {
             #region Lexing
             var lexer = new Lexer.Lexer();
@@ -47,109 +50,83 @@ namespace WallyInterpreter.Components.Interpreter.Wally
             #endregion
             #region Parsing
             var collector = new ErrorColector();
-            var parser = new ParserSLR(new WallyGrammar().Wally, new GranmarSymbol("$", false, GranmarSymbolType.Terminal),new ASTBuilder().Build);
+            var parser = new ParserSLR0 (new WallyGrammar().Wally, new GranmarSymbol("$", false, GranmarSymbolType.Terminal),new ASTBuilder().Build);
+            /*parser.SetReduction("F-->id", ReductionFunctions.AtomicReductor);
+            parser.SetReduction("F-->( E )", ReductionFunctions.InBettewnExtractorReduction);
+            parser.SetReduction("E-->E + T", (asts, s) =>
+            {
+                var builder = new ASTBuilder();
+                var bin = new BinaryAST(s, asts[1].Line, asts[1].Column, builder.BinaryOperators["+"]);
+                bin.Left = asts[0];
+                bin.Right = asts[2];
+                return bin;
+            });
+            parser.SetReduction("T-->T * F", (asts, s) =>
+            {
+                var builder = new ASTBuilder();
+                var bin = new BinaryAST(s, asts[1].Line, asts[1].Column, builder.BinaryOperators["*"]);
+                bin.Left = asts[0];
+                bin.Right = asts[2];
+                return bin;
+            });
+            parser.SetReduction("T-->F", ReductionFunctions.AtomicReductor);
+            parser.SetReduction("E-->T", ReductionFunctions.AtomicReductor);*/
+
             //AtomicReductions
             parser.SetReduction("Program-->StmtList",ReductionFunctions.AtomicReductor);
+            parser.SetReduction("StmtList-->StmtList Statement EOL", ReductionFunctions.StmtListReduction);
+            parser.SetReduction("StmtList-->StmtList EOL",ReductionFunctions.AtomicReductor);
+            parser.SetReduction("StmtList-->EOL",ReductionFunctions.AtomicReductor);
+            parser.SetReduction("StmtList-->Statement EOL", (asts,s)=> new StmtListAST(s,new[] { asts[0] }, asts[0].Line, asts[0].Column));
             parser.SetReduction("Statement-->AssignStmt", ReductionFunctions.AtomicReductor);
-            parser.SetReduction("Statement-->ExprStmt", ReductionFunctions.AtomicReductor);
+            parser.SetReduction("Statement-->BoolExpr", ReductionFunctions.AtomicReductor);
             parser.SetReduction("Statement-->GotoStmt", ReductionFunctions.AtomicReductor);
             parser.SetReduction("Statement-->LabelDecl", ReductionFunctions.AtomicReductor);
-            parser.SetReduction("ExprStmt-->BoolExpr", ReductionFunctions.AtomicReductor);
-            parser.SetReduction("BoolExpr-->ArithExpr", ReductionFunctions.AtomicReductor);
-            parser.SetReduction("ArithExpr-->Term", ReductionFunctions.AtomicReductor);
-            parser.SetReduction("Term-->Power", ReductionFunctions.AtomicReductor);
-            parser.SetReduction("Power-->Factor", ReductionFunctions.AtomicReductor);
-            parser.SetReduction("Factor-->string", ReductionFunctions.AtomicReductor);
-            parser.SetReduction("Factor-->boolean", ReductionFunctions.AtomicReductor);
-            parser.SetReduction("Factor-->number", ReductionFunctions.AtomicReductor);
-            parser.SetReduction("Factor-->FuncCall", ReductionFunctions.AtomicReductor);
-            parser.SetReduction("Args-->ArgumentsList", ReductionFunctions.AtomicReductor);
-            parser.SetReduction("Args-->epsilon", ReductionFunctions.AtomicReductor);
-            //Binary Reductions
-            parser.SetReduction("BoolExpr-->BoolExpr&&BoolExpr", ReductionFunctions.BinaryOperatorReduction);
-            parser.SetReduction("BoolExpr-->BoolExpr||BoolExpr", ReductionFunctions.BinaryOperatorReduction);
-            parser.SetReduction("BoolExpr-->BoolExprRelationOperatorBoolExpr", ReductionFunctions.BinaryOperatorReduction);
-            parser.SetReduction("ArithExpr-->Term+ArithExpr", ReductionFunctions.BinaryOperatorReduction);
-            parser.SetReduction("ArithExpr-->Term-ArithExpr", ReductionFunctions.BinaryOperatorReduction);
-            parser.SetReduction("Term-->Power*Term", ReductionFunctions.BinaryOperatorReduction);
-            parser.SetReduction("Term-->Power/Term", ReductionFunctions.BinaryOperatorReduction);
-            parser.SetReduction("Term-->Power%Term", ReductionFunctions.BinaryOperatorReduction);
-            parser.SetReduction("Power-->Factor**Power", ReductionFunctions.BinaryOperatorReduction);
-            //Unary Reductions
-            parser.SetReduction("BoolExpr-->!BoolExpr", ReductionFunctions.UnaryOperatorReduction);
-            //(Expre) reduction
-            parser.SetReduction("Factor-->(ExprStmt)", ReductionFunctions.BinaryOperatorReduction);
-            //ListReduction
-            parser.SetReduction("StmtList-->StatementEOLStmtList", (asts, symbol)=>
-            {
-                var head = asts[0];
-                var tail = (StmtListAST)asts[2];
-                var list = new List<IAST>();
-                list.Add(head);
-                list.AddRange(tail.statements);
-                return new StmtListAST(list.ToArray(),tail.Line,tail.Column);
-            }
-            );
-            parser.SetReduction("StmtList-->Statement",  (asts , s) =>new StmtListAST(new IAST[] { asts[0] }, asts[0].Line, asts[0].Column));
-            parser.SetReduction("ArgumentsList-->ExprStmt,ArgumentsList", (asts,s) => {
-                var head = asts[0];
-                var tail = (StmtListAST)asts[2];
-                var list = new List<IAST>();
-                list.Add(head);
-                list.AddRange(tail.statements);
-                return new StmtListAST(list.ToArray(), tail.Line, tail.Column+1);
+            parser.SetReduction("AssignStmt-->id <- BoolExpr", ReductionFunctions.AssignationReductor);
+            parser.SetReduction("GotoStmt-->goto [ id ] ( BoolExpr )", ReductionFunctions.GotoReductor);
+            parser.SetReduction("LabelDecl-->id", ReductionFunctions.LabelReductor);
+            parser.SetReduction("BoolExpr-->OrExpr",ReductionFunctions.AtomicReductor);
+            parser.SetReduction("BoolExpr-->OrExpr && BoolExpr",ReductionFunctions.BinaryOperator);
+            parser.SetReduction("OrExpr-->OrExpr || NotExpr",ReductionFunctions.BinaryOperator);
+            parser.SetReduction("OrExpr-->NotExpr",ReductionFunctions.AtomicReductor);
+            parser.SetReduction("NotExpr-->! NotExpr",ReductionFunctions.UnaryOperatorReduction);
+            parser.SetReduction("NotExpr-->RelExpr",ReductionFunctions.AtomicReductor);
+            parser.SetReduction("RelExpr-->ArithExpr > ArithExpr",ReductionFunctions.BinaryOperator);
+            parser.SetReduction("RelExpr-->ArithExpr < ArithExpr",ReductionFunctions.BinaryOperator);
+            parser.SetReduction("RelExpr-->ArithExpr == ArithExpr",ReductionFunctions.BinaryOperator);
+            parser.SetReduction("RelExpr-->ArithExpr >= ArithExpr",ReductionFunctions.BinaryOperator);
+            parser.SetReduction("RelExpr-->ArithExpr <= ArithExpr",ReductionFunctions.BinaryOperator);
+            parser.SetReduction("RelExpr-->ArithExpr", ReductionFunctions.AtomicReductor);
+            parser.SetReduction("ArithExpr-->ArithExpr + Term",ReductionFunctions.BinaryOperator);
+            parser.SetReduction("ArithExpr-->ArithExpr - Term",ReductionFunctions.BinaryOperator);
+            parser.SetReduction("ArithExpr-->ArithExpr Term", (asts, s) => {
+                var b = new ASTBuilder();
+                var bin = new BinaryAST(s, asts[1].Line, asts[1].Column, b.BinaryOperators["+"]);
+                bin.Left = asts[0];
+                bin.Right = asts[1];
+                return bin;
+                });
+            parser.SetReduction("ArithExpr-->Term",ReductionFunctions.AtomicReductor);
+            parser.SetReduction("Term-->Term * Power",ReductionFunctions.BinaryOperator);
+            parser.SetReduction("Term-->Term / Power",ReductionFunctions.BinaryOperator);
+            parser.SetReduction("Term-->Term % Power",ReductionFunctions.BinaryOperator);
+            parser.SetReduction("Term-->Power",ReductionFunctions.AtomicReductor);
+            parser.SetReduction("Power-->Power ** Factor",ReductionFunctions.BinaryOperator);
+            parser.SetReduction("Power-->Factor",ReductionFunctions.AtomicReductor);
+            parser.SetReduction("Factor-->id",ReductionFunctions.VariableReductor);
+            parser.SetReduction("Factor-->boolean",ReductionFunctions.AtomicReductor);
+            parser.SetReduction("Factor-->string",ReductionFunctions.AtomicReductor);
+            parser.SetReduction("Factor-->number",ReductionFunctions.AtomicReductor);
+            parser.SetReduction("Factor-->FuncCall",ReductionFunctions.AtomicReductor);
+            parser.SetReduction("Factor-->( BoolExpr )",ReductionFunctions.InBettewnExtractorReduction);
+            parser.SetReduction("FuncCall-->id ( )",ReductionFunctions.FunctionCallReductor);
+            parser.SetReduction("FuncCall-->id ( Args )",ReductionFunctions.FunctionCallReductor);
+            parser.SetReduction("Args-->Args , BoolExpr",ReductionFunctions.ArgsReductor);
+            parser.SetReduction("Args-->BoolExpr", (args, s) => {
+                return new StmtListAST(s, new IAST[] { args[0] }, args[0].Line, args[0].Column);
             });
-            parser.SetReduction("ArgumentsList-->ExprStmt", (asts, s) => {
-                var head = asts[0];
-                var tail = asts[2];
-                var list = new List<IAST>();
-                list.Add(head);
-                list.Add(tail);
-                return new StmtListAST(list.ToArray(), tail.Line, tail.Column+1);
-            });
-            parser.SetReduction("FuncCall-->id(Args)", (asts, s) => {
-                var name = asts[0].Symbol;
-                var args = (StmtListAST)asts[2];
-                return new FuncCallAST(name,args.Line,args.Column+1 ,args.statements.ToArray());
-            });
-            parser.SetReduction("Factor-->id", (asts, s) => {
-                return new VariableAST(asts[0].Symbol, asts[0].Line, asts[0].Column, ((VariableAST)asts[0])._name);
-            });
-            parser.SetReduction("AssignStmt-->id->ExprStmt",(asts,s)=> {
-                var name = (VariableAST)asts[0];
-                var exp = asts[2];
-                return new AssignationAST(name._name, exp.Line, exp.Column, exp);
-            });
-            parser.SetReduction("GotoStmt->Goto[LabelDecl](BoolExpr)", (asts,s)=> {
-                var label = (LabelAST)asts[2];
-                var cond = asts[5];
-                return new GoToAST(label,cond,cond.Line,cond.Column+1);
-            });
-            parser.SetReduction("RelationOperator->==",(asts,s) => {
-                var a = asts[0];
-                a.UpdateSymbol("==");
-                return a;
-            });
-            parser.SetReduction("RelationOperator-><=", (asts, s) => {
-                var a = asts[0];
-                a.UpdateSymbol("<=");
-                return a;
-            });
-            parser.SetReduction("RelationOperator->>=", (asts, s) => {
-                var a = asts[0];
-                a.UpdateSymbol(">=");
-                return a;
-            });
-            parser.SetReduction("RelationOperator-><", (asts, s) => {
-                var a = asts[0];
-                a.UpdateSymbol("<");
-                return a;
-            });
-            parser.SetReduction("RelationOperator->>", (asts, s) => {
-                var a = asts[0];
-                a.UpdateSymbol("<");
-                return a;
-            });
+
+
             #endregion
             #region GlobalContext
             IContext context = new Context();
@@ -166,14 +143,17 @@ namespace WallyInterpreter.Components.Interpreter.Wally
             context.DefineFunctions("GetCanvasSize", globalFunctions.GetCanvasSize);
             context.DefineFunctions("GetColorCount", globalFunctions.GetColorCount);
             context.DefineFunctions("IsBrushSize", globalFunctions.IsBrushSize);
+            context.DefineFunctions("IsBrushColor", globalFunctions.IsBrushColor);
             context.DefineFunctions("IsCanvasColor", globalFunctions.IsCanvasColor);
+            canvas = new CanvasBuff(CanvasSize);
+            context.SetVariables("Canvas",canvas);
             #endregion
             interpreter =  new Interpreter.Interpreter(lexer,parser,lexAnalizer,collector,context);
         }
 
         public void Execute(string code)
         {
-            interpreter.Execute(code);
+            interpreter.Execute(code + "$");
         }
     }
 }
